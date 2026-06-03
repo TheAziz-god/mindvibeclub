@@ -1,37 +1,82 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 py-16 text-center">
-        <p className="mb-4 font-semibold text-[#2D6A73]">
+      <section className="relative mx-auto max-w-6xl px-6 py-20 text-center">
+        <div className="absolute left-1/2 top-40 h-72 w-72 -translate-x-1/2 rounded-full bg-[#D65A7A]/20 blur-3xl" />
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative mb-4 font-semibold text-[#2D6A73]"
+        >
           Confidence • Wellbeing • Resilience
-        </p>
+        </motion.p>
 
-        <h1 className="mx-auto max-w-5xl text-5xl font-bold leading-tight text-[#D65A7A] md:text-7xl">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="relative mx-auto max-w-5xl text-5xl font-bold leading-tight text-[#D65A7A] md:text-7xl"
+        >
           Building Confidence, Wellbeing & Resilience for Young People
-        </h1>
+        </motion.h1>
 
-        <p className="mx-auto mt-6 max-w-2xl text-lg">
+        <motion.p
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative mx-auto mt-6 max-w-2xl text-lg"
+        >
           Supporting children and young people through wellbeing, confidence
           building and personal growth.
-        </p>
+        </motion.p>
 
-        <div className="mt-8 flex justify-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9 }}
+          className="relative mt-8 flex justify-center gap-4"
+        >
           <Link
             href="/book-session"
-            className="rounded-lg bg-[#2D6A73] px-6 py-3 font-medium text-white"
+            className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
             Book Session
           </Link>
 
           <Link
             href="/about"
-            className="rounded-lg border border-[#2D6A73] px-6 py-3 font-medium text-[#2D6A73]"
+            className="rounded-xl border border-[#2D6A73] px-6 py-3 font-medium text-[#2D6A73] transition duration-300 hover:-translate-y-1 hover:bg-[#2D6A73] hover:text-white hover:shadow-xl"
           >
             Learn More
           </Link>
+        </motion.div>
+      </section>
+
+      {/* Stats */}
+      <section className="mx-auto max-w-6xl px-6 py-10">
+        <div className="grid gap-6 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md md:grid-cols-3">
+          {[
+            ["500+", "Young People Supported"],
+            ["20+", "School & Community Sessions"],
+            ["95%", "Positive Feedback Goal"],
+          ].map(([number, label]) => (
+            <motion.div
+              key={number}
+              whileHover={{ scale: 1.08, rotate: 1 }}
+              className="text-center"
+            >
+              <h2 className="text-5xl font-bold text-[#D65A7A]">{number}</h2>
+              <p className="mt-2 font-medium text-[#2D6A73]">{label}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -48,18 +93,30 @@ export default function Home() {
             ["🎯", "Motivation & Growth", "Encouraging positive habits and personal development."],
             ["🤝", "Supportive Community", "Creating safe spaces where young people can grow together."],
           ].map(([icon, title, text]) => (
-            <div key={title} className="rounded-2xl bg-white p-6 text-center shadow-sm">
+            <motion.div
+              key={title}
+              whileHover={{ y: -8, scale: 1.03 }}
+              className="rounded-3xl border border-white/30 bg-white/60 p-6 text-center shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+            >
               <div className="mb-4 text-4xl">{icon}</div>
-              <h3 className="mb-3 text-xl font-bold">{title}</h3>
+              <h3 className="mb-3 text-xl font-bold text-[#D65A7A]">
+                {title}
+              </h3>
               <p>{text}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* Why Choose Us */}
       <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="rounded-3xl bg-white p-10 shadow-sm">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="rounded-3xl border border-white/30 bg-white/60 p-10 shadow-xl backdrop-blur-md"
+        >
           <h2 className="mb-8 text-center text-4xl font-bold text-[#2D6A73]">
             Why Choose MindVibeClub?
           </h2>
@@ -71,12 +128,15 @@ export default function Home() {
               "Resources for students, parents and schools",
               "Clear safeguarding and crisis guidance",
             ].map((item) => (
-              <div key={item} className="rounded-xl bg-[#FAF7F2] p-5 font-semibold">
+              <div
+                key={item}
+                className="rounded-xl bg-[#FAF7F2]/80 p-5 font-semibold shadow-sm"
+              >
                 ✓ {item}
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Services Preview */}
@@ -86,7 +146,8 @@ export default function Home() {
         </h2>
 
         <p className="mx-auto mb-12 max-w-2xl text-center">
-          Simple, supportive wellbeing services for young people, parents and schools.
+          Simple, supportive wellbeing services for young people, parents and
+          schools.
         </p>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -96,12 +157,74 @@ export default function Home() {
             ["Parent Support & Guidance", "Helpful guidance for parents supporting their child’s wellbeing journey."],
             ["School Partnerships", "Workshops and programmes for schools and youth organisations."],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-[#E8DDD3] bg-white p-8 shadow-sm">
-              <h3 className="mb-3 text-2xl font-bold text-[#D65A7A]">{title}</h3>
+            <motion.div
+              key={title}
+              whileHover={{ y: -8 }}
+              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+            >
+              <h3 className="mb-3 text-2xl font-bold text-[#D65A7A]">
+                {title}
+              </h3>
               <p>{text}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <h2 className="mb-4 text-center text-4xl font-bold text-[#2D6A73]">
+          What People Say
+        </h2>
+
+        <p className="mx-auto mb-12 max-w-2xl text-center">
+          Feedback from students, parents and school communities.
+        </p>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            ["Student", "MindVibeClub helped me feel more confident and less worried about school."],
+            ["Parent", "The support was friendly, positive and easy for my child to understand."],
+            ["School Partner", "A calm, engaging and supportive approach to student wellbeing."],
+          ].map(([person, quote]) => (
+            <motion.div
+              key={person}
+              whileHover={{ y: -8 }}
+              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+            >
+              <p className="mb-5 text-lg">“{quote}”</p>
+              <p className="font-bold text-[#D65A7A]">— {person}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="rounded-3xl bg-[#D65A7A] p-12 text-center text-white shadow-2xl"
+        >
+          <h2 className="mb-4 text-4xl font-bold">
+            Ready to Start Your Wellbeing Journey?
+          </h2>
+
+          <p className="mx-auto mb-8 max-w-2xl text-lg">
+            Take the next step towards confidence, resilience and personal
+            growth.
+          </p>
+
+          <Link
+            href="/book-session"
+            className="rounded-xl bg-white px-6 py-3 font-bold text-[#D65A7A] transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+          >
+            Book a Session
+          </Link>
+        </motion.div>
       </section>
     </main>
   );
