@@ -3,24 +3,7 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
-      {/* Navbar */}
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Image
-          src="/logo.png"
-          alt="MindVibeClub Logo"
-          width={220}
-          height={110}
-          priority
-        />
-
-        <div className="flex gap-8 text-sm font-medium">
-          <a href="#">Home</a>
-          <a href="#">About</a>
-          <a href="#">Services</a>
-          <a href="#">Resources</a>
-          <a href="#">Contact</a>
-        </div>
-      </nav>
+    
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 py-16 text-center">
