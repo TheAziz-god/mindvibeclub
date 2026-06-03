@@ -11,27 +11,25 @@ export default function Footer() {
 
         <div>
           <h4 className="mb-3 font-bold">Quick Links</h4>
-          <Link href="/" className="block">Home</Link>
-          <Link href="/about" className="block">About</Link>
-          <Link href="/services" className="block">Services</Link>
-          <Link href="/resources" className="block">Resources</Link>
-          <Link href="/contact" className="block">Contact</Link>
+          <Link href="/" className="block hover:text-[#F6C2D0]">Home</Link>
+          <Link href="/about" className="block hover:text-[#F6C2D0]">About</Link>
+          <Link href="/services" className="block hover:text-[#F6C2D0]">Services</Link>
+          <Link href="/resources" className="block hover:text-[#F6C2D0]">Resources</Link>
+          <Link href="/contact" className="block hover:text-[#F6C2D0]">Contact</Link>
         </div>
 
         <div>
           <h4 className="mb-3 font-bold">Support</h4>
-          <Link href="/faq" className="block">FAQ</Link>
-          <Link href="/book-session" className="block">Book Session</Link>
-          <Link href="/safeguarding" className="block">Safeguarding</Link>
+          <Link href="/faq" className="block hover:text-[#F6C2D0]">FAQ</Link>
+          <Link href="/book-session" className="block hover:text-[#F6C2D0]">Book Session</Link>
+          <Link href="/safeguarding" className="block hover:text-[#F6C2D0]">Safeguarding</Link>
         </div>
 
         <div>
           <h4 className="mb-3 font-bold">Legal</h4>
-          <Link href="/privacy-policy" className="block">Privacy Policy</Link>
-          <Link href="/terms-and-conditions" className="block">Terms & Conditions</Link>
-          <p className="mt-3 text-sm">
-            Not an emergency or crisis service.
-          </p>
+          <Link href="/privacy-policy" className="block hover:text-[#F6C2D0]">Privacy Policy</Link>
+          <Link href="/terms-and-conditions" className="block hover:text-[#F6C2D0]">Terms & Conditions</Link>
+          <p className="mt-3 text-sm">Not an emergency or crisis service.</p>
         </div>
       </div>
 
