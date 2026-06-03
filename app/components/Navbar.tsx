@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   const links = [
     ["Home", "/"],
@@ -23,22 +25,31 @@ export default function Navbar() {
           <Image
             src="/logo.png"
             alt="MindVibeClub Logo"
-            width={200}
-            height={100}
+            width={220}
+            height={110}
             priority
+            className="w-[120px] md:w-[180px]"
           />
         </Link>
 
         <div className="hidden items-center gap-8 text-sm font-medium md:flex">
           {links.map(([name, href]) => (
-            <Link key={name} href={href} className="transition hover:text-[#D65A7A]">
+            <Link
+              key={name}
+              href={href}
+              className={`transition duration-300 hover:text-[#D65A7A] ${
+                pathname === href
+                  ? "font-bold text-[#D65A7A]"
+                  : "text-[#2B2B2B]"
+              }`}
+            >
               {name}
             </Link>
           ))}
 
           <Link
             href="/book-session"
-            className="rounded-lg bg-[#2D6A73] px-5 py-2 text-white transition hover:opacity-90"
+            className="rounded-lg bg-[#2D6A73] px-5 py-2 text-white transition duration-300 hover:-translate-y-1 hover:shadow-lg"
           >
             Book Now
           </Link>
@@ -60,7 +71,11 @@ export default function Navbar() {
                 key={name}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="transition hover:text-[#D65A7A]"
+                className={`transition duration-300 ${
+                  pathname === href
+                    ? "font-bold text-[#D65A7A]"
+                    : "text-[#2B2B2B]"
+                }`}
               >
                 {name}
               </Link>
@@ -69,7 +84,7 @@ export default function Navbar() {
             <Link
               href="/book-session"
               onClick={() => setOpen(false)}
-              className="rounded-lg bg-[#2D6A73] px-5 py-3 text-center text-white"
+              className="rounded-lg bg-[#2D6A73] px-5 py-3 text-center text-white transition duration-300 hover:shadow-lg"
             >
               Book Now
             </Link>
