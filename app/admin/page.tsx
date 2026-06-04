@@ -20,6 +20,7 @@ type Booking = {
   session_type: string | null;
   preferred_date: string | null;
   message: string | null;
+  status: string | null;
   created_at: string;
 };
 
@@ -30,40 +31,91 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function checkUserAndLoadData() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  async function loadData() {
+    setLoading(true);
 
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      const { data: messagesData } = await supabase
-        .from("contact_messages")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (messagesData) setMessages(messagesData);
-      if (bookingsData) setBookings(bookingsData);
-
-      setLoading(false);
+    if (!user) {
+      router.push("/login");
+      return;
     }
 
-    checkUserAndLoadData();
-  }, [router]);
+    const { data: messagesData } = await supabase
+      .from("contact_messages")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (messagesData) setMessages(messagesData);
+    if (bookingsData) setBookings(bookingsData);
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function updateBookingStatus(id: string, status: string) {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status })
+      .eq("id", id);
+
+    if (!error) {
+      loadData();
+    }
+  }
+
+  async function deleteMessage(id: string) {
+    const confirmDelete = confirm("Delete this contact message?");
+
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
+      .from("contact_messages")
+      .delete()
+      .eq("id", id);
+
+    if (!error) {
+      loadData();
+    }
+  }
+
+  async function deleteBooking(id: string) {
+    const confirmDelete = confirm("Delete this booking request?");
+
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from("bookings").delete().eq("id", id);
+
+    if (!error) {
+      loadData();
+    }
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
   }
+
+  const totalBookings = bookings.length;
+  const newBookings = bookings.filter(
+    (booking) => booking.status === "new" || !booking.status
+  ).length;
+  const contactedBookings = bookings.filter(
+    (booking) => booking.status === "contacted"
+  ).length;
+  const completedBookings = bookings.filter(
+    (booking) => booking.status === "completed"
+  ).length;
 
   return (
     <main className="min-h-screen bg-[#FAF7F2] px-6 py-20 text-[#2B2B2B]">
@@ -88,6 +140,36 @@ export default function AdminPage() {
           </button>
         </div>
 
+        <div className="mb-10 grid gap-5 md:grid-cols-4">
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              {messages.length}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Messages</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              {totalBookings}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Total Bookings</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              {newBookings + contactedBookings}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Active Bookings</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              {completedBookings}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Completed</p>
+          </div>
+        </div>
+
         {loading && (
           <p className="font-semibold text-[#2D6A73]">Loading data...</p>
         )}
@@ -108,9 +190,24 @@ export default function AdminPage() {
                   key={msg.id}
                   className="rounded-2xl bg-[#FAF7F2]/80 p-5 shadow-sm"
                 >
-                  <p className="font-bold text-[#D65A7A]">{msg.full_name}</p>
-                  <p className="text-sm">{msg.email}</p>
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-[#D65A7A]">
+                        {msg.full_name}
+                      </p>
+                      <p className="text-sm">{msg.email}</p>
+                    </div>
+
+                    <button
+                      onClick={() => deleteMessage(msg.id)}
+                      className="rounded-lg bg-red-100 px-3 py-1 text-sm font-semibold text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+
                   <p className="mt-3">{msg.message}</p>
+
                   <p className="mt-3 text-xs text-gray-500">
                     {new Date(msg.created_at).toLocaleString()}
                   </p>
@@ -134,9 +231,15 @@ export default function AdminPage() {
                   key={booking.id}
                   className="rounded-2xl bg-[#FAF7F2]/80 p-5 shadow-sm"
                 >
-                  <p className="font-bold text-[#D65A7A]">
-                    {booking.full_name}
-                  </p>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="font-bold text-[#D65A7A]">
+                      {booking.full_name}
+                    </p>
+
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#2D6A73]">
+                      {booking.status || "new"}
+                    </span>
+                  </div>
 
                   <p className="text-sm">{booking.email}</p>
 
@@ -160,6 +263,40 @@ export default function AdminPage() {
                   <p className="mt-3 text-xs text-gray-500">
                     {new Date(booking.created_at).toLocaleString()}
                   </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => updateBookingStatus(booking.id, "new")}
+                      className="rounded-lg bg-gray-200 px-3 py-2 text-sm"
+                    >
+                      New
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        updateBookingStatus(booking.id, "contacted")
+                      }
+                      className="rounded-lg bg-[#2D6A73] px-3 py-2 text-sm text-white"
+                    >
+                      Contacted
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        updateBookingStatus(booking.id, "completed")
+                      }
+                      className="rounded-lg bg-[#D65A7A] px-3 py-2 text-sm text-white"
+                    >
+                      Completed
+                    </button>
+
+                    <button
+                      onClick={() => deleteBooking(booking.id)}
+                      className="rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
