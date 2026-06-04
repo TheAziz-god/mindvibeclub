@@ -37,15 +37,16 @@ function AnimatedCounter({
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
+    <main className="relative z-10 min-h-screen text-[#2B2B2B]">
+      {/* Hero */}
       <section className="relative mx-auto max-w-6xl px-6 py-20 text-center">
-        <div className="absolute left-1/2 top-40 h-72 w-72 -translate-x-1/2 rounded-full bg-[#D65A7A]/20 blur-3xl" />
+        <div className="absolute left-1/2 top-40 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[#D65A7A]/20 blur-3xl" />
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative mb-4 font-semibold text-[#2D6A73]"
+          className="mb-4 font-semibold text-[#2D6A73]"
         >
           Confidence • Wellbeing • Resilience
         </motion.p>
@@ -54,7 +55,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="relative mx-auto max-w-5xl bg-gradient-to-r from-[#D65A7A] via-[#A78BFA] to-[#2D6A73] bg-clip-text text-5xl font-bold leading-tight text-transparent md:text-7xl"
+          className="mx-auto max-w-5xl text-5xl font-bold leading-tight text-[#D65A7A] md:text-7xl"
         >
           Building Confidence, Wellbeing & Resilience for Young People
         </motion.h1>
@@ -63,7 +64,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative mx-auto mt-6 max-w-2xl text-lg"
+          className="mx-auto mt-6 max-w-2xl text-lg"
         >
           Supporting children and young people through wellbeing, confidence
           building and personal growth.
@@ -73,7 +74,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9 }}
-          className="relative mt-8 flex justify-center gap-4"
+          className="mt-8 flex justify-center gap-4"
         >
           <Link
             href="/book-session"
@@ -91,8 +92,9 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Stats */}
       <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="grid gap-6 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md md:grid-cols-3">
+        <div className="grid gap-6 rounded-3xl border border-white/30 bg-white/70 p-8 shadow-xl backdrop-blur-md md:grid-cols-3">
           {[
             [500, "+", "Young People Supported"],
             [20, "+", "School & Community Sessions"],
@@ -115,6 +117,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How We Help */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-12 text-center text-4xl font-bold text-[#2D6A73]">
           How We Help
@@ -130,7 +133,7 @@ export default function Home() {
             <motion.div
               key={title}
               whileHover={{ y: -8, scale: 1.03 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-6 text-center shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
+              className="rounded-3xl border border-white/30 bg-white/70 p-6 text-center shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <div className="mb-4 text-4xl">{icon}</div>
               <h3 className="mb-3 text-xl font-bold text-[#D65A7A]">
@@ -142,13 +145,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Why Choose Us */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="rounded-3xl border border-white/30 bg-white/60 p-10 shadow-xl backdrop-blur-md"
+          className="rounded-3xl border border-white/30 bg-white/70 p-10 shadow-xl backdrop-blur-md"
         >
           <h2 className="mb-8 text-center text-4xl font-bold text-[#2D6A73]">
             Why Choose MindVibeClub?
@@ -163,7 +167,7 @@ export default function Home() {
             ].map((item) => (
               <div
                 key={item}
-                className="rounded-xl bg-[#FAF7F2]/80 p-5 font-semibold shadow-sm"
+                className="rounded-xl bg-[#FAF7F2]/90 p-5 font-semibold shadow-sm"
               >
                 ✓ {item}
               </div>
@@ -172,6 +176,7 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* Services */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-4 text-center text-4xl font-bold text-[#2D6A73]">
           Our Services
@@ -192,7 +197,7 @@ export default function Home() {
             <motion.div
               key={title}
               whileHover={{ y: -8 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
+              className="rounded-3xl border border-white/30 bg-white/70 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <h3 className="mb-3 text-2xl font-bold text-[#D65A7A]">
                 {title}
@@ -203,6 +208,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Testimonials */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-4 text-center text-4xl font-bold text-[#2D6A73]">
           What People Say
@@ -227,7 +233,7 @@ export default function Home() {
                 delay: index * 0.4,
               }}
               whileHover={{ scale: 1.03 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
+              className="rounded-3xl border border-white/30 bg-white/70 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <p className="mb-5 text-lg">“{quote}”</p>
               <p className="font-bold text-[#D65A7A]">— {person}</p>
@@ -236,6 +242,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Final CTA */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
