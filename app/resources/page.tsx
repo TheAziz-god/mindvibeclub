@@ -4,12 +4,42 @@ import { motion } from "framer-motion";
 
 export default function ResourcesPage() {
   const resources = [
-    ["Managing Exam Stress", "Simple strategies to stay calm, focused and organised during exam season.", "Exam Stress"],
-    ["Building Confidence", "Practical tips to help young people grow self-belief and resilience.", "Confidence"],
-    ["Healthy Study Habits", "Easy routines to support motivation, focus and wellbeing.", "Study Skills"],
-    ["Understanding Emotions", "A beginner-friendly guide to recognising and managing emotions.", "Wellbeing"],
-    ["Friendship & Communication", "Support for building positive relationships and communication skills.", "Relationships"],
-    ["Positive Daily Routines", "Small habits that can support confidence, wellbeing and balance.", "Lifestyle"],
+    [
+      "Managing Exam Stress",
+      "Simple strategies to stay calm, focused and organised during exam season.",
+      "Exam Stress",
+      "📘",
+    ],
+    [
+      "Building Confidence",
+      "Practical tips to help young people grow self-belief and resilience.",
+      "Confidence",
+      "🌱",
+    ],
+    [
+      "Healthy Study Habits",
+      "Easy routines to support motivation, focus and wellbeing.",
+      "Study Skills",
+      "🎯",
+    ],
+    [
+      "Understanding Emotions",
+      "A beginner-friendly guide to recognising and managing emotions.",
+      "Wellbeing",
+      "🧠",
+    ],
+    [
+      "Friendship & Communication",
+      "Support for building positive relationships and communication skills.",
+      "Relationships",
+      "🤝",
+    ],
+    [
+      "Positive Daily Routines",
+      "Small habits that can support confidence, wellbeing and balance.",
+      "Lifestyle",
+      "☀️",
+    ],
   ];
 
   return (
@@ -27,18 +57,33 @@ export default function ResourcesPage() {
           Helpful wellbeing resources for students, parents and schools.
         </p>
 
+        <div className="mb-12 flex flex-wrap justify-center gap-3">
+          {["All", "Exam Stress", "Confidence", "Wellbeing", "Study Skills"].map(
+            (category) => (
+              <button
+                key={category}
+                className="rounded-full border border-[#2D6A73] px-5 py-2 text-sm font-semibold text-[#2D6A73] transition hover:bg-[#2D6A73] hover:text-white"
+              >
+                {category}
+              </button>
+            )
+          )}
+        </div>
+
         <div className="grid gap-8 md:grid-cols-3">
-          {resources.map(([title, text, category], index) => (
+          {resources.map(([title, text, category, icon], index) => (
             <motion.div
               key={title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -8 }}
+              whileHover={{ y: -8, scale: 1.02 }}
               transition={{ delay: index * 0.05 }}
               viewport={{ once: true }}
-              className="rounded-2xl bg-white p-7 shadow-sm"
+              className="rounded-3xl border border-white/30 bg-white/60 p-7 shadow-xl backdrop-blur-md"
             >
-              <p className="mb-4 inline-block rounded-full bg-[#FAF7F2] px-4 py-2 text-sm font-semibold text-[#2D6A73]">
+              <div className="mb-5 text-4xl">{icon}</div>
+
+              <p className="mb-4 inline-block rounded-full bg-[#FAF7F2]/80 px-4 py-2 text-sm font-semibold text-[#2D6A73]">
                 {category}
               </p>
 

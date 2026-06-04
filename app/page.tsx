@@ -1,12 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useInView, animate } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+function AnimatedCounter({
+  value,
+  suffix = "",
+}: {
+  value: number;
+  suffix?: string;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+
+    const controls = animate(0, value, {
+      duration: 2,
+      ease: "easeOut",
+      onUpdate: (latest) => setDisplayValue(Math.round(latest)),
+    });
+
+    return () => controls.stop();
+  }, [isInView, value]);
+
+  return (
+    <span ref={ref}>
+      {displayValue}
+      {suffix}
+    </span>
+  );
+}
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
-      {/* Hero */}
       <section className="relative mx-auto max-w-6xl px-6 py-20 text-center">
         <div className="absolute left-1/2 top-40 h-72 w-72 -translate-x-1/2 rounded-full bg-[#D65A7A]/20 blur-3xl" />
 
@@ -23,7 +54,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="relative mx-auto max-w-5xl text-5xl font-bold leading-tight text-[#D65A7A] md:text-7xl"
+          className="relative mx-auto max-w-5xl bg-gradient-to-r from-[#D65A7A] via-[#A78BFA] to-[#2D6A73] bg-clip-text text-5xl font-bold leading-tight text-transparent md:text-7xl"
         >
           Building Confidence, Wellbeing & Resilience for Young People
         </motion.h1>
@@ -60,27 +91,30 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Stats */}
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="grid gap-6 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md md:grid-cols-3">
           {[
-            ["500+", "Young People Supported"],
-            ["20+", "School & Community Sessions"],
-            ["95%", "Positive Feedback Goal"],
-          ].map(([number, label]) => (
+            [500, "+", "Young People Supported"],
+            [20, "+", "School & Community Sessions"],
+            [95, "%", "Positive Feedback Goal"],
+          ].map(([number, suffix, label]) => (
             <motion.div
-              key={number}
+              key={label}
               whileHover={{ scale: 1.08, rotate: 1 }}
               className="text-center"
             >
-              <h2 className="text-5xl font-bold text-[#D65A7A]">{number}</h2>
+              <h2 className="text-5xl font-bold text-[#D65A7A]">
+                <AnimatedCounter
+                  value={number as number}
+                  suffix={suffix as string}
+                />
+              </h2>
               <p className="mt-2 font-medium text-[#2D6A73]">{label}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* How We Help */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-12 text-center text-4xl font-bold text-[#2D6A73]">
           How We Help
@@ -96,7 +130,7 @@ export default function Home() {
             <motion.div
               key={title}
               whileHover={{ y: -8, scale: 1.03 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-6 text-center shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+              className="rounded-3xl border border-white/30 bg-white/60 p-6 text-center shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <div className="mb-4 text-4xl">{icon}</div>
               <h3 className="mb-3 text-xl font-bold text-[#D65A7A]">
@@ -108,7 +142,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
@@ -139,7 +172,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Services Preview */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-4 text-center text-4xl font-bold text-[#2D6A73]">
           Our Services
@@ -160,7 +192,7 @@ export default function Home() {
             <motion.div
               key={title}
               whileHover={{ y: -8 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <h3 className="mb-3 text-2xl font-bold text-[#D65A7A]">
                 {title}
@@ -171,7 +203,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="mb-4 text-center text-4xl font-bold text-[#2D6A73]">
           What People Say
@@ -186,11 +217,17 @@ export default function Home() {
             ["Student", "MindVibeClub helped me feel more confident and less worried about school."],
             ["Parent", "The support was friendly, positive and easy for my child to understand."],
             ["School Partner", "A calm, engaging and supportive approach to student wellbeing."],
-          ].map(([person, quote]) => (
+          ].map(([person, quote], index) => (
             <motion.div
               key={person}
-              whileHover={{ y: -8 }}
-              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
+              animate={{ y: [0, -8, 0] }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                delay: index * 0.4,
+              }}
+              whileHover={{ scale: 1.03 }}
+              className="rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md transition duration-300 hover:shadow-2xl"
             >
               <p className="mb-5 text-lg">“{quote}”</p>
               <p className="font-bold text-[#D65A7A]">— {person}</p>
@@ -199,7 +236,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Final CTA */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -207,7 +243,7 @@ export default function Home() {
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="rounded-3xl bg-[#D65A7A] p-12 text-center text-white shadow-2xl"
+          className="rounded-3xl bg-gradient-to-r from-[#D65A7A] to-[#2D6A73] p-12 text-center text-white shadow-2xl"
         >
           <h2 className="mb-4 text-4xl font-bold">
             Ready to Start Your Wellbeing Journey?
