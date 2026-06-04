@@ -23,7 +23,26 @@ export default function ContactPage() {
     ]);
 
     if (error) {
-      setStatus("Something went wrong. Please try again.");
+      setStatus(error.message);
+      return;
+    }
+
+    const emailResponse = await fetch("/api/send-contact-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fullName,
+        email,
+        message,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      setStatus(
+        "Message saved, but email notification failed. Check Resend setup."
+      );
       return;
     }
 
@@ -133,9 +152,7 @@ export default function ContactPage() {
               </button>
 
               {status && (
-                <p className="font-semibold text-[#D65A7A]">
-                  {status}
-                </p>
+                <p className="font-semibold text-[#D65A7A]">{status}</p>
               )}
             </form>
           </motion.div>
