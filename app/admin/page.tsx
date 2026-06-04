@@ -41,10 +41,11 @@ export default function AdminPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    if (!user || user.email !== "azizkhan69512@gmail.com") {
+  await supabase.auth.signOut();
+  router.push("/login");
+  return;
+}
 
     const { data: messagesData } = await supabase
       .from("contact_messages")
