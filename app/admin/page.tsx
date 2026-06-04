@@ -31,6 +31,9 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   async function loadData() {
     setLoading(true);
 
@@ -106,6 +109,34 @@ export default function AdminPage() {
     router.push("/login");
   }
 
+  const filteredMessages = messages.filter((msg) => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      msg.full_name.toLowerCase().includes(search) ||
+      msg.email.toLowerCase().includes(search) ||
+      msg.message.toLowerCase().includes(search)
+    );
+  });
+
+  const filteredBookings = bookings.filter((booking) => {
+    const search = searchTerm.toLowerCase();
+
+    const matchesSearch =
+      booking.full_name.toLowerCase().includes(search) ||
+      booking.email.toLowerCase().includes(search) ||
+      (booking.phone || "").toLowerCase().includes(search) ||
+      (booking.session_type || "").toLowerCase().includes(search) ||
+      (booking.preferred_date || "").toLowerCase().includes(search) ||
+      (booking.message || "").toLowerCase().includes(search);
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (booking.status || "new").toLowerCase() === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   const totalBookings = bookings.length;
   const newBookings = bookings.filter(
     (booking) => booking.status === "new" || !booking.status
@@ -127,8 +158,7 @@ export default function AdminPage() {
             </h1>
 
             <p className="mt-4 text-lg">
-              View contact messages and booking requests submitted through the
-              website.
+              View, search and manage contact messages and booking requests.
             </p>
           </div>
 
@@ -170,6 +200,27 @@ export default function AdminPage() {
           </div>
         </div>
 
+        <div className="mb-10 grid gap-4 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md md:grid-cols-2">
+          <input
+            type="text"
+            placeholder="Search by name, email, session, message..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+          >
+            <option value="all">All booking statuses</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+
         {loading && (
           <p className="font-semibold text-[#2D6A73]">Loading data...</p>
         )}
@@ -181,11 +232,11 @@ export default function AdminPage() {
             </h2>
 
             <div className="space-y-4">
-              {messages.length === 0 && !loading && (
-                <p>No contact messages yet.</p>
+              {filteredMessages.length === 0 && !loading && (
+                <p>No matching contact messages.</p>
               )}
 
-              {messages.map((msg) => (
+              {filteredMessages.map((msg) => (
                 <div
                   key={msg.id}
                   className="rounded-2xl bg-[#FAF7F2]/80 p-5 shadow-sm"
@@ -222,11 +273,11 @@ export default function AdminPage() {
             </h2>
 
             <div className="space-y-4">
-              {bookings.length === 0 && !loading && (
-                <p>No booking requests yet.</p>
+              {filteredBookings.length === 0 && !loading && (
+                <p>No matching booking requests.</p>
               )}
 
-              {bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <div
                   key={booking.id}
                   className="rounded-2xl bg-[#FAF7F2]/80 p-5 shadow-sm"
