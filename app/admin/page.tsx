@@ -42,10 +42,10 @@ export default function AdminPage() {
     } = await supabase.auth.getUser();
 
     if (!user || user.email !== "azizkhan69512@gmail.com") {
-  await supabase.auth.signOut();
-  router.push("/login");
-  return;
-}
+      await supabase.auth.signOut();
+      router.push("/login");
+      return;
+    }
 
     const { data: messagesData } = await supabase
       .from("contact_messages")
@@ -80,7 +80,6 @@ export default function AdminPage() {
 
   async function deleteMessage(id: string) {
     const confirmDelete = confirm("Delete this contact message?");
-
     if (!confirmDelete) return;
 
     const { error } = await supabase
@@ -95,7 +94,6 @@ export default function AdminPage() {
 
   async function deleteBooking(id: string) {
     const confirmDelete = confirm("Delete this booking request?");
-
     if (!confirmDelete) return;
 
     const { error } = await supabase.from("bookings").delete().eq("id", id);
@@ -103,6 +101,96 @@ export default function AdminPage() {
     if (!error) {
       loadData();
     }
+  }
+
+  function downloadCSV(filename: string, rows: Record<string, string | null>[]) {
+    if (rows.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header] ?? "";
+            return `"${String(value).replaceAll('"', '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function exportMessagesCSV() {
+    downloadCSV(
+      "mindvibeclub-contact-messages.csv",
+      filteredMessages.map((msg) => ({
+        name: msg.full_name,
+        email: msg.email,
+        message: msg.message,
+        created_at: msg.created_at,
+      }))
+    );
+  }
+
+  function exportBookingsCSV() {
+    downloadCSV(
+      "mindvibeclub-bookings.csv",
+      filteredBookings.map((booking) => ({
+        name: booking.full_name,
+        email: booking.email,
+        phone: booking.phone,
+        session_type: booking.session_type,
+        preferred_date: booking.preferred_date,
+        status: booking.status || "new",
+        message: booking.message,
+        created_at: booking.created_at,
+      }))
+    );
+  }
+
+  function formatGoogleDate(date: string | null) {
+    if (!date) return "";
+
+    const cleanDate = date.replaceAll("-", "");
+
+    return `${cleanDate}T100000/${cleanDate}T110000`;
+  }
+
+  function createGoogleCalendarLink(booking: Booking) {
+    const dates = formatGoogleDate(booking.preferred_date);
+
+    const title = encodeURIComponent(
+      `MindVibeClub Session - ${booking.full_name}`
+    );
+
+    const details = encodeURIComponent(
+      `Session Type: ${booking.session_type || "Not selected"}\n` +
+        `Client Name: ${booking.full_name}\n` +
+        `Email: ${booking.email}\n` +
+        `Phone: ${booking.phone || "Not provided"}\n` +
+        `Status: ${booking.status || "new"}\n\n` +
+        `Message:\n${booking.message || "No message"}`
+    );
+
+    const location = encodeURIComponent(
+      "Online / Leicester, United Kingdom"
+    );
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
   }
 
   async function handleLogout() {
@@ -163,12 +251,28 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white"
-          >
-            Logout
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={exportMessagesCSV}
+              className="rounded-xl bg-[#D65A7A] px-5 py-3 font-medium text-white"
+            >
+              Export Messages CSV
+            </button>
+
+            <button
+              onClick={exportBookingsCSV}
+              className="rounded-xl bg-[#2D6A73] px-5 py-3 font-medium text-white"
+            >
+              Export Bookings CSV
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="rounded-xl bg-[#2B2B2B] px-5 py-3 font-medium text-white"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="mb-10 grid gap-5 md:grid-cols-4">
@@ -341,6 +445,17 @@ export default function AdminPage() {
                     >
                       Completed
                     </button>
+
+                    {booking.preferred_date && (
+                      <a
+                        href={createGoogleCalendarLink(booking)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-700"
+                      >
+                        Add to Google Calendar
+                      </a>
+                    )}
 
                     <button
                       onClick={() => deleteBooking(booking.id)}

@@ -14,25 +14,30 @@ export default function BookSessionPage() {
   const [status, setStatus] = useState("");
 
   const sessions = [
-    [
-      "Intro Session",
-      "A short first session to understand goals, needs and next steps.",
-      "30 minutes",
-      "£25",
-    ],
-    [
-      "1-to-1 Support",
-      "Personal wellbeing and confidence support for young people.",
-      "50 minutes",
-      "£40",
-    ],
-    [
-      "Group Session",
-      "Interactive wellbeing sessions for small groups, schools or youth organisations.",
-      "60 minutes",
-      "From £15",
-    ],
+    ["Intro Session", "A short first session to understand goals, needs and next steps.", "30 minutes", "£25"],
+    ["1-to-1 Support", "Personal wellbeing and confidence support for young people.", "50 minutes", "£40"],
+    ["Group Session", "Interactive wellbeing sessions for small groups, schools or youth organisations.", "60 minutes", "£15"],
   ];
+
+  async function handlePayment(type: string) {
+    setStatus("Redirecting to payment...");
+
+    const response = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sessionType: type }),
+    });
+
+    const data = await response.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setStatus("Payment could not start. Please try again.");
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,11 +46,11 @@ export default function BookSessionPage() {
     const { error } = await supabase.from("bookings").insert([
       {
         full_name: fullName,
-        email: email,
-        phone: phone,
+        email,
+        phone,
         session_type: sessionType,
         preferred_date: preferredDate,
-        message: message,
+        message,
       },
     ]);
 
@@ -75,8 +80,7 @@ export default function BookSessionPage() {
         </motion.h1>
 
         <p className="mx-auto mb-12 max-w-3xl text-center text-lg">
-          Choose the type of support you are interested in. Online payment can
-          be connected later using Stripe, Calendly or Square Appointments.
+          Choose a session, send a booking request, or pay securely using Stripe.
         </p>
 
         <div className="grid gap-8 md:grid-cols-3">
@@ -103,13 +107,23 @@ export default function BookSessionPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSessionType(title)}
-                className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                Select
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSessionType(title)}
+                  className="rounded-xl border border-[#2D6A73] px-6 py-3 font-medium text-[#2D6A73]"
+                >
+                  Select
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePayment(title)}
+                  className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  Pay Now
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -189,23 +203,6 @@ export default function BookSessionPage() {
               </p>
             )}
           </form>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-16 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md"
-        >
-          <h2 className="mb-4 text-2xl font-bold text-[#2D6A73]">
-            Important Notice
-          </h2>
-
-          <p>
-            MindVibeClub is not an emergency or crisis service. If you are in
-            immediate danger or need urgent mental health support, call 999,
-            contact NHS 111, call Samaritans on 116 123, or go to A&E.
-          </p>
         </motion.div>
       </section>
     </main>
