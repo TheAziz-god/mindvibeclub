@@ -21,7 +21,27 @@ type Booking = {
   preferred_date: string | null;
   message: string | null;
   status: string | null;
+  payment_status?: string | null;
+  session_price?: number | null;
   created_at: string;
+};
+
+type BookingSlot = {
+  id: string;
+  session_type: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  price: number;
+  is_booked: boolean;
+  created_at: string;
+};
+
+const serviceDefaults = {
+  "Intro Session": { duration: 30, price: 25 },
+  "1-to-1 Support": { duration: 50, price: 40 },
+  "Group Session": { duration: 60, price: 15 },
 };
 
 export default function AdminPage() {
@@ -29,10 +49,31 @@ export default function AdminPage() {
 
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [slots, setSlots] = useState<BookingSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [slotSessionType, setSlotSessionType] = useState("Intro Session");
+  const [slotStartDate, setSlotStartDate] = useState("");
+  const [slotEndDate, setSlotEndDate] = useState("");
+  const [slotStartTime, setSlotStartTime] = useState("09:00");
+  const [slotEndTime, setSlotEndTime] = useState("12:00");
+  const [slotDuration, setSlotDuration] = useState(30);
+  const [slotBreak, setSlotBreak] = useState(0);
+  const [slotPrice, setSlotPrice] = useState(25);
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
+
+  const days = [
+    { label: "Sunday", value: 0 },
+    { label: "Monday", value: 1 },
+    { label: "Tuesday", value: 2 },
+    { label: "Wednesday", value: 3 },
+    { label: "Thursday", value: 4 },
+    { label: "Friday", value: 5 },
+    { label: "Saturday", value: 6 },
+  ];
 
   async function loadData() {
     setLoading(true);
@@ -57,8 +98,15 @@ export default function AdminPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
+    const { data: slotsData } = await supabase
+      .from("booking_slots")
+      .select("*")
+      .order("slot_date", { ascending: true })
+      .order("start_time", { ascending: true });
+
     if (messagesData) setMessages(messagesData);
     if (bookingsData) setBookings(bookingsData);
+    if (slotsData) setSlots(slotsData);
 
     setLoading(false);
   }
@@ -67,15 +115,119 @@ export default function AdminPage() {
     loadData();
   }, []);
 
+  function handleServiceChange(service: keyof typeof serviceDefaults) {
+    setSlotSessionType(service);
+    setSlotDuration(serviceDefaults[service].duration);
+    setSlotPrice(serviceDefaults[service].price);
+  }
+
+  function timeToMinutes(time: string) {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function minutesToTime(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}:00`;
+  }
+
+  function formatDate(date: Date) {
+    return date.toISOString().split("T")[0];
+  }
+
+  function toggleDay(day: number) {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  }
+
+  async function generateSlots() {
+    if (!slotStartDate || !slotEndDate) {
+      alert("Please select both start date and end date.");
+      return;
+    }
+
+    if (selectedDays.length === 0) {
+      alert("Please select at least one available day.");
+      return;
+    }
+
+    const start = new Date(slotStartDate);
+    const end = new Date(slotEndDate);
+
+    if (end < start) {
+      alert("End date cannot be before start date.");
+      return;
+    }
+
+    const generatedSlots = [];
+
+    for (
+      let current = new Date(start);
+      current <= end;
+      current.setDate(current.getDate() + 1)
+    ) {
+      if (!selectedDays.includes(current.getDay())) continue;
+
+      let startMinutes = timeToMinutes(slotStartTime);
+      const endMinutes = timeToMinutes(slotEndTime);
+
+      while (startMinutes + slotDuration <= endMinutes) {
+        const slotEnd = startMinutes + slotDuration;
+
+        generatedSlots.push({
+          session_type: slotSessionType,
+          slot_date: formatDate(current),
+          start_time: minutesToTime(startMinutes),
+          end_time: minutesToTime(slotEnd),
+          duration_minutes: slotDuration,
+          price: slotPrice,
+          is_booked: false,
+        });
+
+        startMinutes = slotEnd + slotBreak;
+      }
+    }
+
+    if (generatedSlots.length === 0) {
+      alert("No slots could be generated. Check your date range, days and times.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("booking_slots")
+      .insert(generatedSlots);
+
+    if (error) {
+      alert("Error generating slots: " + error.message);
+      return;
+    }
+
+    alert(`${generatedSlots.length} slots generated successfully.`);
+    loadData();
+  }
+
+  async function deleteSlot(id: string) {
+    const confirmDelete = confirm("Delete this slot?");
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from("booking_slots").delete().eq("id", id);
+
+    if (!error) loadData();
+  }
+
   async function updateBookingStatus(id: string, status: string) {
     const { error } = await supabase
       .from("bookings")
       .update({ status })
       .eq("id", id);
 
-    if (!error) {
-      loadData();
-    }
+    if (!error) loadData();
   }
 
   async function deleteMessage(id: string) {
@@ -87,110 +239,16 @@ export default function AdminPage() {
       .delete()
       .eq("id", id);
 
-    if (!error) {
-      loadData();
-    }
+    if (!error) loadData();
   }
 
   async function deleteBooking(id: string) {
-    const confirmDelete = confirm("Delete this booking request?");
+    const confirmDelete = confirm("Delete this booking?");
     if (!confirmDelete) return;
 
     const { error } = await supabase.from("bookings").delete().eq("id", id);
 
-    if (!error) {
-      loadData();
-    }
-  }
-
-  function downloadCSV(filename: string, rows: Record<string, string | null>[]) {
-    if (rows.length === 0) {
-      alert("No data to export.");
-      return;
-    }
-
-    const headers = Object.keys(rows[0]);
-
-    const csv = [
-      headers.join(","),
-      ...rows.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header] ?? "";
-            return `"${String(value).replaceAll('"', '""')}"`;
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  function exportMessagesCSV() {
-    downloadCSV(
-      "mindvibeclub-contact-messages.csv",
-      filteredMessages.map((msg) => ({
-        name: msg.full_name,
-        email: msg.email,
-        message: msg.message,
-        created_at: msg.created_at,
-      }))
-    );
-  }
-
-  function exportBookingsCSV() {
-    downloadCSV(
-      "mindvibeclub-bookings.csv",
-      filteredBookings.map((booking) => ({
-        name: booking.full_name,
-        email: booking.email,
-        phone: booking.phone,
-        session_type: booking.session_type,
-        preferred_date: booking.preferred_date,
-        status: booking.status || "new",
-        message: booking.message,
-        created_at: booking.created_at,
-      }))
-    );
-  }
-
-  function formatGoogleDate(date: string | null) {
-    if (!date) return "";
-
-    const cleanDate = date.replaceAll("-", "");
-
-    return `${cleanDate}T100000/${cleanDate}T110000`;
-  }
-
-  function createGoogleCalendarLink(booking: Booking) {
-    const dates = formatGoogleDate(booking.preferred_date);
-
-    const title = encodeURIComponent(
-      `MindVibeClub Session - ${booking.full_name}`
-    );
-
-    const details = encodeURIComponent(
-      `Session Type: ${booking.session_type || "Not selected"}\n` +
-        `Client Name: ${booking.full_name}\n` +
-        `Email: ${booking.email}\n` +
-        `Phone: ${booking.phone || "Not provided"}\n` +
-        `Status: ${booking.status || "new"}\n\n` +
-        `Message:\n${booking.message || "No message"}`
-    );
-
-    const location = encodeURIComponent(
-      "Online / Leicester, United Kingdom"
-    );
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    if (!error) loadData();
   }
 
   async function handleLogout() {
@@ -226,16 +284,8 @@ export default function AdminPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalBookings = bookings.length;
-  const newBookings = bookings.filter(
-    (booking) => booking.status === "new" || !booking.status
-  ).length;
-  const contactedBookings = bookings.filter(
-    (booking) => booking.status === "contacted"
-  ).length;
-  const completedBookings = bookings.filter(
-    (booking) => booking.status === "completed"
-  ).length;
+  const availableSlots = slots.filter((slot) => !slot.is_booked).length;
+  const bookedSlots = slots.filter((slot) => slot.is_booked).length;
 
   return (
     <main className="min-h-screen bg-[#FAF7F2] px-6 py-20 text-[#2B2B2B]">
@@ -245,34 +295,17 @@ export default function AdminPage() {
             <h1 className="text-5xl font-bold text-[#D65A7A]">
               Admin Dashboard
             </h1>
-
             <p className="mt-4 text-lg">
-              View, search and manage contact messages and booking requests.
+              Manage contact messages, bookings and available appointment slots.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={exportMessagesCSV}
-              className="rounded-xl bg-[#D65A7A] px-5 py-3 font-medium text-white"
-            >
-              Export Messages CSV
-            </button>
-
-            <button
-              onClick={exportBookingsCSV}
-              className="rounded-xl bg-[#2D6A73] px-5 py-3 font-medium text-white"
-            >
-              Export Bookings CSV
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="rounded-xl bg-[#2B2B2B] px-5 py-3 font-medium text-white"
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-[#2B2B2B] px-5 py-3 font-medium text-white"
+          >
+            Logout
+          </button>
         </div>
 
         <div className="mb-10 grid gap-5 md:grid-cols-4">
@@ -285,25 +318,224 @@ export default function AdminPage() {
 
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
             <p className="text-3xl font-bold text-[#D65A7A]">
-              {totalBookings}
+              {bookings.length}
             </p>
-            <p className="font-semibold text-[#2D6A73]">Total Bookings</p>
+            <p className="font-semibold text-[#2D6A73]">Bookings</p>
           </div>
 
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
             <p className="text-3xl font-bold text-[#D65A7A]">
-              {newBookings + contactedBookings}
+              {availableSlots}
             </p>
-            <p className="font-semibold text-[#2D6A73]">Active Bookings</p>
+            <p className="font-semibold text-[#2D6A73]">Available Slots</p>
           </div>
 
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
-            <p className="text-3xl font-bold text-[#D65A7A]">
-              {completedBookings}
-            </p>
-            <p className="font-semibold text-[#2D6A73]">Completed</p>
+            <p className="text-3xl font-bold text-[#D65A7A]">{bookedSlots}</p>
+            <p className="font-semibold text-[#2D6A73]">Booked Slots</p>
           </div>
         </div>
+
+        <section className="mb-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
+          <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">
+            Slot Manager
+          </h2>
+          <p className="mb-6 text-sm text-gray-600">
+            Create appointment slots for a single day, week, month or custom date range. Customers will only see available slots.
+          </p>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Service Type
+              </span>
+              <select
+                value={slotSessionType}
+                onChange={(e) =>
+                  handleServiceChange(
+                    e.target.value as keyof typeof serviceDefaults
+                  )
+                }
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              >
+                <option>Intro Session</option>
+                <option>1-to-1 Support</option>
+                <option>Group Session</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Start Date
+              </span>
+              <input
+                type="date"
+                value={slotStartDate}
+                onChange={(e) => setSlotStartDate(e.target.value)}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                End Date
+              </span>
+              <input
+                type="date"
+                value={slotEndDate}
+                onChange={(e) => setSlotEndDate(e.target.value)}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Start Time
+              </span>
+              <input
+                type="time"
+                value={slotStartTime}
+                onChange={(e) => setSlotStartTime(e.target.value)}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                End Time
+              </span>
+              <input
+                type="time"
+                value={slotEndTime}
+                onChange={(e) => setSlotEndTime(e.target.value)}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Session Duration (minutes)
+              </span>
+              <input
+                type="number"
+                value={slotDuration}
+                onChange={(e) => setSlotDuration(Number(e.target.value))}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+              <span className="mt-1 block text-xs text-gray-500">
+                Auto-filled from service, but admin can edit it.
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Break Between Sessions (minutes)
+              </span>
+              <input
+                type="number"
+                value={slotBreak}
+                onChange={(e) => setSlotBreak(Number(e.target.value))}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+              <span className="mt-1 block text-xs text-gray-500">
+                Example: 10 means 10 minutes gap between each booking.
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-semibold text-[#2D6A73]">
+                Price (£)
+              </span>
+              <input
+                type="number"
+                value={slotPrice}
+                onChange={(e) => setSlotPrice(Number(e.target.value))}
+                className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+              <span className="mt-1 block text-xs text-gray-500">
+                Auto-filled from service, but admin can edit it.
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="mb-2 font-bold text-[#2D6A73]">
+              Choose Available Days
+            </h3>
+            <p className="mb-3 text-sm text-gray-600">
+              Slots will only be created on these selected days inside your date range.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              {days.map((day) => (
+                <button
+                  type="button"
+                  key={day.value}
+                  onClick={() => toggleDay(day.value)}
+                  className={`rounded-xl px-4 py-2 text-sm font-bold ${
+                    selectedDays.includes(day.value)
+                      ? "bg-[#2D6A73] text-white"
+                      : "bg-white text-[#2D6A73]"
+                  }`}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={generateSlots}
+            className="mt-6 rounded-xl bg-[#D65A7A] px-6 py-3 font-bold text-white"
+          >
+            Generate Available Slots
+          </button>
+        </section>
+
+        <section className="mb-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
+          <h2 className="mb-5 text-3xl font-bold text-[#2D6A73]">
+            Generated Slots
+          </h2>
+
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {slots.length === 0 && !loading && <p>No slots created yet.</p>}
+
+            {slots.map((slot) => (
+              <div
+                key={slot.id}
+                className="rounded-2xl bg-[#FAF7F2]/80 p-4 shadow-sm"
+              >
+                <p className="font-bold text-[#D65A7A]">{slot.session_type}</p>
+                <p>
+                  <strong>Date:</strong> {slot.slot_date}
+                </p>
+                <p>
+                  <strong>Time:</strong> {slot.start_time.slice(0, 5)} -{" "}
+                  {slot.end_time.slice(0, 5)}
+                </p>
+                <p>
+                  <strong>Duration:</strong> {slot.duration_minutes} minutes
+                </p>
+                <p>
+                  <strong>Price:</strong> £{slot.price}
+                </p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  {slot.is_booked ? "Booked" : "Available"}
+                </p>
+
+                {!slot.is_booked && (
+                  <button
+                    onClick={() => deleteSlot(slot.id)}
+                    className="mt-3 rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
+                  >
+                    Delete Slot
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="mb-10 grid gap-4 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md md:grid-cols-2">
           <input
@@ -374,12 +606,12 @@ export default function AdminPage() {
 
           <section className="rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
             <h2 className="mb-5 text-3xl font-bold text-[#2D6A73]">
-              Booking Requests
+              Bookings
             </h2>
 
             <div className="space-y-4">
               {filteredBookings.length === 0 && !loading && (
-                <p>No matching booking requests.</p>
+                <p>No matching bookings.</p>
               )}
 
               {filteredBookings.map((booking) => (
@@ -409,8 +641,18 @@ export default function AdminPage() {
 
                   {booking.preferred_date && (
                     <p>
-                      <strong>Preferred Date:</strong>{" "}
-                      {booking.preferred_date}
+                      <strong>Date:</strong> {booking.preferred_date}
+                    </p>
+                  )}
+
+                  <p>
+                    <strong>Payment:</strong>{" "}
+                    {booking.payment_status || "unpaid"}
+                  </p>
+
+                  {booking.session_price && (
+                    <p>
+                      <strong>Price:</strong> £{booking.session_price}
                     </p>
                   )}
 
@@ -445,17 +687,6 @@ export default function AdminPage() {
                     >
                       Completed
                     </button>
-
-                    {booking.preferred_date && (
-                      <a
-                        href={createGoogleCalendarLink(booking)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-700"
-                      >
-                        Add to Google Calendar
-                      </a>
-                    )}
 
                     <button
                       onClick={() => deleteBooking(booking.id)}
