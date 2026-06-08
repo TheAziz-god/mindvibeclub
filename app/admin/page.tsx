@@ -23,6 +23,7 @@ type Booking = {
   status: string | null;
   payment_status?: string | null;
   session_price?: number | null;
+  slot_id?: string | null;
   created_at: string;
 };
 
@@ -36,6 +37,13 @@ type BookingSlot = {
   price: number;
   is_booked: boolean;
   created_at: string;
+  bookings?: {
+    id: string;
+    full_name: string;
+    email: string;
+    payment_status: string | null;
+    status: string | null;
+  }[];
 };
 
 const serviceDefaults = {
@@ -54,6 +62,9 @@ export default function AdminPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [slotFilter, setSlotFilter] = useState("all");
+  const [deleteStartDate, setDeleteStartDate] = useState("");
+  const [deleteEndDate, setDeleteEndDate] = useState("");
 
   const [slotSessionType, setSlotSessionType] = useState("Intro Session");
   const [slotStartDate, setSlotStartDate] = useState("");
@@ -100,7 +111,16 @@ export default function AdminPage() {
 
     const { data: slotsData } = await supabase
       .from("booking_slots")
-      .select("*")
+      .select(`
+        *,
+        bookings (
+          id,
+          full_name,
+          email,
+          payment_status,
+          status
+        )
+      `)
       .order("slot_date", { ascending: true })
       .order("start_time", { ascending: true });
 
@@ -136,8 +156,21 @@ export default function AdminPage() {
     )}:00`;
   }
 
-  function formatDate(date: Date) {
+  function formatDateForDB(date: Date) {
     return date.toISOString().split("T")[0];
+  }
+
+  function formatDisplayDate(date: string) {
+    return new Date(date).toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function formatDisplayTime(time: string) {
+    return time.slice(0, 5);
   }
 
   function toggleDay(day: number) {
@@ -165,7 +198,15 @@ export default function AdminPage() {
       return;
     }
 
-    const generatedSlots = [];
+    const generatedSlots: {
+      session_type: string;
+      slot_date: string;
+      start_time: string;
+      end_time: string;
+      duration_minutes: number;
+      price: number;
+      is_booked: boolean;
+    }[] = [];
 
     for (
       let current = new Date(start);
@@ -182,7 +223,7 @@ export default function AdminPage() {
 
         generatedSlots.push({
           session_type: slotSessionType,
-          slot_date: formatDate(current),
+          slot_date: formatDateForDB(current),
           start_time: minutesToTime(startMinutes),
           end_time: minutesToTime(slotEnd),
           duration_minutes: slotDuration,
@@ -199,26 +240,122 @@ export default function AdminPage() {
       return;
     }
 
+    const { data: existingSlots, error: fetchError } = await supabase
+      .from("booking_slots")
+      .select("session_type, slot_date, start_time")
+      .gte("slot_date", slotStartDate)
+      .lte("slot_date", slotEndDate);
+
+    if (fetchError) {
+      alert("Could not check existing slots: " + fetchError.message);
+      return;
+    }
+
+    const existingSlotKeys = new Set(
+      (existingSlots || []).map(
+        (slot) => `${slot.session_type}-${slot.slot_date}-${slot.start_time}`
+      )
+    );
+
+    const newSlotsOnly = generatedSlots.filter(
+      (slot) =>
+        !existingSlotKeys.has(
+          `${slot.session_type}-${slot.slot_date}-${slot.start_time}`
+        )
+    );
+
+    if (newSlotsOnly.length === 0) {
+      alert("No new slots were created because all of these slots already exist.");
+      return;
+    }
+
     const { error } = await supabase
       .from("booking_slots")
-      .insert(generatedSlots);
+      .insert(newSlotsOnly);
 
     if (error) {
       alert("Error generating slots: " + error.message);
       return;
     }
 
-    alert(`${generatedSlots.length} slots generated successfully.`);
+    const skippedCount = generatedSlots.length - newSlotsOnly.length;
+
+    alert(
+      `${newSlotsOnly.length} new slots generated successfully.${
+        skippedCount > 0 ? ` ${skippedCount} duplicate slots skipped.` : ""
+      }`
+    );
+
     loadData();
   }
 
   async function deleteSlot(id: string) {
-    const confirmDelete = confirm("Delete this slot?");
+    const confirmDelete = confirm("Delete this available slot?");
     if (!confirmDelete) return;
 
     const { error } = await supabase.from("booking_slots").delete().eq("id", id);
 
     if (!error) loadData();
+  }
+
+  async function deleteAvailableSlotsByDateRange() {
+    if (!deleteStartDate || !deleteEndDate) {
+      alert("Please select both start date and end date.");
+      return;
+    }
+
+    const confirmDelete = confirm(
+      "Delete all available slots in this date range? Booked slots will not be deleted."
+    );
+
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
+      .from("booking_slots")
+      .delete()
+      .eq("is_booked", false)
+      .gte("slot_date", deleteStartDate)
+      .lte("slot_date", deleteEndDate);
+
+    if (error) {
+      alert("Could not delete slots: " + error.message);
+      return;
+    }
+
+    alert("Available slots deleted successfully.");
+    setDeleteStartDate("");
+    setDeleteEndDate("");
+    loadData();
+  }
+
+  async function cancelBookingAndFreeSlot(slotId: string, bookingId?: string) {
+    const confirmCancel = confirm(
+      "Cancel this booking and make the slot available again?"
+    );
+    if (!confirmCancel) return;
+
+    if (bookingId) {
+      await supabase
+        .from("bookings")
+        .update({
+          status: "cancelled",
+        })
+        .eq("id", bookingId);
+    }
+
+    const { error } = await supabase
+      .from("booking_slots")
+      .update({
+        is_booked: false,
+      })
+      .eq("id", slotId);
+
+    if (error) {
+      alert("Could not free slot: " + error.message);
+      return;
+    }
+
+    loadData();
   }
 
   async function updateBookingStatus(id: string, status: string) {
@@ -242,13 +379,20 @@ export default function AdminPage() {
     if (!error) loadData();
   }
 
-  async function deleteBooking(id: string) {
+  async function deleteBooking(id: string, slotId?: string | null) {
     const confirmDelete = confirm("Delete this booking?");
     if (!confirmDelete) return;
 
-    const { error } = await supabase.from("bookings").delete().eq("id", id);
+    await supabase.from("bookings").delete().eq("id", id);
 
-    if (!error) loadData();
+    if (slotId) {
+      await supabase
+        .from("booking_slots")
+        .update({ is_booked: false })
+        .eq("id", slotId);
+    }
+
+    loadData();
   }
 
   async function handleLogout() {
@@ -284,8 +428,21 @@ export default function AdminPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const filteredSlots = slots.filter((slot) => {
+    if (slotFilter === "available") return !slot.is_booked;
+    if (slotFilter === "booked") return slot.is_booked;
+    if (slotFilter === "Intro Session") return slot.session_type === "Intro Session";
+    if (slotFilter === "1-to-1 Support") return slot.session_type === "1-to-1 Support";
+    if (slotFilter === "Group Session") return slot.session_type === "Group Session";
+
+    return true;
+  });
+
   const availableSlots = slots.filter((slot) => !slot.is_booked).length;
   const bookedSlots = slots.filter((slot) => slot.is_booked).length;
+  const totalRevenue = bookings
+    .filter((booking) => booking.payment_status === "paid")
+    .reduce((sum, booking) => sum + Number(booking.session_price || 0), 0);
 
   return (
     <main className="min-h-screen bg-[#FAF7F2] px-6 py-20 text-[#2B2B2B]">
@@ -308,7 +465,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        <div className="mb-10 grid gap-5 md:grid-cols-4">
+        <div className="mb-10 grid gap-5 md:grid-cols-5">
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
             <p className="text-3xl font-bold text-[#D65A7A]">
               {messages.length}
@@ -334,14 +491,23 @@ export default function AdminPage() {
             <p className="text-3xl font-bold text-[#D65A7A]">{bookedSlots}</p>
             <p className="font-semibold text-[#2D6A73]">Booked Slots</p>
           </div>
+
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              £{totalRevenue}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Total Revenue</p>
+          </div>
         </div>
 
         <section className="mb-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
           <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">
             Slot Manager
           </h2>
+
           <p className="mb-6 text-sm text-gray-600">
-            Create appointment slots for a single day, week, month or custom date range. Customers will only see available slots.
+            Create appointment slots for a single day, week, month or custom date range.
+            Customers will only see available slots.
           </p>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -422,9 +588,6 @@ export default function AdminPage() {
                 onChange={(e) => setSlotDuration(Number(e.target.value))}
                 className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
               />
-              <span className="mt-1 block text-xs text-gray-500">
-                Auto-filled from service, but admin can edit it.
-              </span>
             </label>
 
             <label className="block">
@@ -437,9 +600,6 @@ export default function AdminPage() {
                 onChange={(e) => setSlotBreak(Number(e.target.value))}
                 className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
               />
-              <span className="mt-1 block text-xs text-gray-500">
-                Example: 10 means 10 minutes gap between each booking.
-              </span>
             </label>
 
             <label className="block">
@@ -452,9 +612,6 @@ export default function AdminPage() {
                 onChange={(e) => setSlotPrice(Number(e.target.value))}
                 className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
               />
-              <span className="mt-1 block text-xs text-gray-500">
-                Auto-filled from service, but admin can edit it.
-              </span>
             </label>
           </div>
 
@@ -462,9 +619,6 @@ export default function AdminPage() {
             <h3 className="mb-2 font-bold text-[#2D6A73]">
               Choose Available Days
             </h3>
-            <p className="mb-3 text-sm text-gray-600">
-              Slots will only be created on these selected days inside your date range.
-            </p>
 
             <div className="flex flex-wrap gap-3">
               {days.map((day) => (
@@ -497,43 +651,149 @@ export default function AdminPage() {
             Generated Slots
           </h2>
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {slots.length === 0 && !loading && <p>No slots created yet.</p>}
+          <div className="mb-6 rounded-2xl bg-[#FAF7F2]/80 p-4">
+            <h3 className="mb-3 font-bold text-[#2D6A73]">
+              Bulk Delete Available Slots
+            </h3>
 
-            {slots.map((slot) => (
-              <div
-                key={slot.id}
-                className="rounded-2xl bg-[#FAF7F2]/80 p-4 shadow-sm"
+            <div className="grid gap-3 md:grid-cols-3">
+              <input
+                type="date"
+                value={deleteStartDate}
+                onChange={(e) => setDeleteStartDate(e.target.value)}
+                className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+
+              <input
+                type="date"
+                value={deleteEndDate}
+                onChange={(e) => setDeleteEndDate(e.target.value)}
+                className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              />
+
+              <button
+                onClick={deleteAvailableSlotsByDateRange}
+                className="rounded-xl bg-red-100 px-4 py-3 font-bold text-red-600"
               >
-                <p className="font-bold text-[#D65A7A]">{slot.session_type}</p>
-                <p>
-                  <strong>Date:</strong> {slot.slot_date}
-                </p>
-                <p>
-                  <strong>Time:</strong> {slot.start_time.slice(0, 5)} -{" "}
-                  {slot.end_time.slice(0, 5)}
-                </p>
-                <p>
-                  <strong>Duration:</strong> {slot.duration_minutes} minutes
-                </p>
-                <p>
-                  <strong>Price:</strong> £{slot.price}
-                </p>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  {slot.is_booked ? "Booked" : "Available"}
-                </p>
+                Delete Available Slots
+              </button>
+            </div>
 
-                {!slot.is_booked && (
-                  <button
-                    onClick={() => deleteSlot(slot.id)}
-                    className="mt-3 rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
-                  >
-                    Delete Slot
-                  </button>
-                )}
-              </div>
-            ))}
+            <p className="mt-2 text-xs text-gray-500">
+              This only deletes available slots. Booked slots will stay safe.
+            </p>
+          </div>
+
+          <div className="mb-5">
+            <select
+              value={slotFilter}
+              onChange={(e) => setSlotFilter(e.target.value)}
+              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+            >
+              <option value="all">All Slots</option>
+              <option value="available">Available Slots</option>
+              <option value="booked">Booked Slots</option>
+              <option value="Intro Session">Intro Session</option>
+              <option value="1-to-1 Support">1-to-1 Support</option>
+              <option value="Group Session">Group Session</option>
+            </select>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {filteredSlots.length === 0 && !loading && (
+              <p>No matching slots found.</p>
+            )}
+
+            {filteredSlots.map((slot) => {
+              const booking = slot.bookings?.find(
+                (item) => item.status !== "cancelled"
+              );
+
+              return (
+                <div
+                  key={slot.id}
+                  className={`rounded-2xl p-4 shadow-sm ${
+                    slot.is_booked
+                      ? "bg-red-50 border border-red-100"
+                      : "bg-[#FAF7F2]/80"
+                  }`}
+                >
+                  <p className="font-bold text-[#D65A7A]">
+                    {slot.session_type}
+                  </p>
+
+                  <p>
+                    <strong>Date:</strong> {formatDisplayDate(slot.slot_date)}
+                  </p>
+
+                  <p>
+                    <strong>Time:</strong>{" "}
+                    {formatDisplayTime(slot.start_time)} -{" "}
+                    {formatDisplayTime(slot.end_time)}
+                  </p>
+
+                  <p>
+                    <strong>Duration:</strong> {slot.duration_minutes} minutes
+                  </p>
+
+                  <p>
+                    <strong>Price:</strong> £{slot.price}
+                  </p>
+
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {slot.is_booked ? (
+                      <span className="font-bold text-red-600">Booked</span>
+                    ) : (
+                      <span className="font-bold text-green-600">Available</span>
+                    )}
+                  </p>
+
+                  {slot.is_booked && booking && (
+                    <div className="mt-3 rounded-xl bg-white p-3">
+                      <p className="font-bold text-[#2D6A73]">
+                        Booked Customer
+                      </p>
+
+                      <p>
+                        <strong>Name:</strong> {booking.full_name}
+                      </p>
+
+                      <p>
+                        <strong>Email:</strong> {booking.email}
+                      </p>
+
+                      <p>
+                        <strong>Payment:</strong>{" "}
+                        {booking.payment_status || "unpaid"}
+                      </p>
+
+                      <p>
+                        <strong>Booking:</strong> {booking.status || "new"}
+                      </p>
+
+                      <button
+                        onClick={() =>
+                          cancelBookingAndFreeSlot(slot.id, booking.id)
+                        }
+                        className="mt-3 rounded-lg bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-700"
+                      >
+                        Cancel Booking & Free Slot
+                      </button>
+                    </div>
+                  )}
+
+                  {!slot.is_booked && (
+                    <button
+                      onClick={() => deleteSlot(slot.id)}
+                      className="mt-3 rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
+                    >
+                      Delete Slot
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -553,7 +813,9 @@ export default function AdminPage() {
           >
             <option value="all">All booking statuses</option>
             <option value="new">New</option>
-            <option value="contacted">Contacted</option>
+            <option value="pending_payment">Pending Payment</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
             <option value="completed">Completed</option>
           </select>
         </div>
@@ -641,7 +903,8 @@ export default function AdminPage() {
 
                   {booking.preferred_date && (
                     <p>
-                      <strong>Date:</strong> {booking.preferred_date}
+                      <strong>Date:</strong>{" "}
+                      {formatDisplayDate(booking.preferred_date)}
                     </p>
                   )}
 
@@ -664,19 +927,12 @@ export default function AdminPage() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
-                      onClick={() => updateBookingStatus(booking.id, "new")}
-                      className="rounded-lg bg-gray-200 px-3 py-2 text-sm"
-                    >
-                      New
-                    </button>
-
-                    <button
                       onClick={() =>
-                        updateBookingStatus(booking.id, "contacted")
+                        updateBookingStatus(booking.id, "confirmed")
                       }
                       className="rounded-lg bg-[#2D6A73] px-3 py-2 text-sm text-white"
                     >
-                      Contacted
+                      Confirmed
                     </button>
 
                     <button
@@ -689,7 +945,16 @@ export default function AdminPage() {
                     </button>
 
                     <button
-                      onClick={() => deleteBooking(booking.id)}
+                      onClick={() =>
+                        updateBookingStatus(booking.id, "cancelled")
+                      }
+                      className="rounded-lg bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-700"
+                    >
+                      Cancelled
+                    </button>
+
+                    <button
+                      onClick={() => deleteBooking(booking.id, booking.slot_id)}
                       className="rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
                     >
                       Delete

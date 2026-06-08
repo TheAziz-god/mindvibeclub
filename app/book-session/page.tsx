@@ -44,15 +44,17 @@ export default function BookSessionPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [sessionType, setSessionType] = useState("Intro Session");
+  const [selectedDate, setSelectedDate] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
 
-  async function loadSlots(type: string) {
+  async function loadSlots(type: string, date?: string) {
     setSessionType(type);
     setSelectedSlot(null);
+    setSlots([]);
     setStatus("Loading available slots...");
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("booking_slots")
       .select("*")
       .eq("session_type", type)
@@ -60,13 +62,24 @@ export default function BookSessionPage() {
       .order("slot_date", { ascending: true })
       .order("start_time", { ascending: true });
 
+    if (date) {
+      query = query.eq("slot_date", date);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       setStatus(error.message);
       return;
     }
 
     setSlots(data || []);
-    setStatus("");
+
+    if (!data || data.length === 0) {
+      setStatus("No available slots found for this selection.");
+    } else {
+      setStatus("");
+    }
   }
 
   useEffect(() => {
@@ -86,11 +99,40 @@ export default function BookSessionPage() {
     return time.slice(0, 5);
   }
 
+  async function handleDateSearch() {
+    if (!selectedDate) {
+      setStatus("Please choose a date first.");
+      return;
+    }
+
+    loadSlots(sessionType, selectedDate);
+  }
+
   async function handlePayAndBook(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!selectedSlot) {
       setStatus("Please select an available slot first.");
+      return;
+    }
+
+    setStatus("Checking slot availability...");
+
+    const { data: latestSlot, error: slotCheckError } = await supabase
+      .from("booking_slots")
+      .select("*")
+      .eq("id", selectedSlot.id)
+      .single();
+
+    if (slotCheckError || !latestSlot) {
+      setStatus("Could not check this slot. Please try again.");
+      return;
+    }
+
+    if (latestSlot.is_booked) {
+      setStatus("Sorry, this slot has just been booked by someone else.");
+      setSelectedSlot(null);
+      loadSlots(sessionType, selectedDate || undefined);
       return;
     }
 
@@ -198,7 +240,7 @@ export default function BookSessionPage() {
                 onClick={() => loadSlots(session.title)}
                 className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white"
               >
-                View Available Slots
+                View Upcoming Availability
               </button>
             </motion.div>
           ))}
@@ -210,8 +252,36 @@ export default function BookSessionPage() {
           </h2>
 
           <p className="mb-6 text-sm text-gray-600">
-            Select one available slot for your chosen session.
+            View upcoming availability or search for a specific date.
           </p>
+
+          <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+            />
+
+            <button
+              type="button"
+              onClick={handleDateSearch}
+              className="rounded-xl bg-[#D65A7A] px-6 py-3 font-medium text-white"
+            >
+              Search This Date
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate("");
+                loadSlots(sessionType);
+              }}
+              className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white"
+            >
+              Show Upcoming Slots
+            </button>
+          </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             {slots.length === 0 && (
