@@ -21,18 +21,21 @@ const sessions = [
     text: "A short first session to understand goals, needs and next steps.",
     duration: "30 minutes",
     price: "£25",
+    icon: "🌿",
   },
   {
     title: "1-to-1 Support",
     text: "Personal wellbeing and confidence support for young people.",
     duration: "50 minutes",
     price: "£40",
+    icon: "🧠",
   },
   {
     title: "Group Session",
     text: "Interactive wellbeing sessions for small groups, schools or youth organisations.",
     duration: "60 minutes",
     price: "£15",
+    icon: "🤝",
   },
 ];
 
@@ -96,7 +99,15 @@ export default function BookSessionPage() {
   }
 
   function formatTime(time: string) {
-    return time.slice(0, 5);
+    const [hours, minutes] = time.split(":");
+    const timeDate = new Date();
+    timeDate.setHours(Number(hours), Number(minutes), 0);
+
+    return timeDate.toLocaleTimeString("en-GB", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
   async function handleDateSearch() {
@@ -191,19 +202,29 @@ export default function BookSessionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
+    <main className="mindvibe-bg min-h-screen text-[#2B2B2B]">
       <section className="mx-auto max-w-6xl px-6 py-20">
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 text-center text-5xl font-bold text-[#D65A7A]"
+          className="mindvibe-frame relative mb-14 overflow-hidden px-8 py-16 text-center"
         >
-          Book a Session
-        </motion.h1>
+          <span className="mindvibe-doodle top-right">✿</span>
+          <span className="mindvibe-doodle bottom-left">✿</span>
 
-        <p className="mx-auto mb-12 max-w-3xl text-center text-lg">
-          Choose a session, select an available slot, enter your details and pay securely.
-        </p>
+          <p className="mb-4 font-bold uppercase tracking-[0.25em] text-[#2D8B87]">
+            Start Your Support Journey
+          </p>
+
+          <h1 className="text-5xl font-bold text-[#7A4A8D] md:text-6xl">
+            Book a Session
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#4B4B4B]">
+            Choose a session, select an available slot, enter your details and
+            pay securely. Your booking is confirmed after payment.
+          </p>
+        </motion.div>
 
         <div className="grid gap-8 md:grid-cols-3">
           {sessions.map((session, index) => (
@@ -214,23 +235,25 @@ export default function BookSessionPage() {
               whileHover={{ y: -8, scale: 1.02 }}
               transition={{ delay: index * 0.08 }}
               viewport={{ once: true }}
-              className={`rounded-3xl border p-8 text-center shadow-xl backdrop-blur-md ${
+              className={`rounded-3xl border p-8 text-center shadow-xl transition ${
                 sessionType === session.title
-                  ? "border-[#D65A7A] bg-white"
-                  : "border-white/30 bg-white/60"
+                  ? "border-[#7A4A8D] bg-[#FBF8F3]"
+                  : "border-[#E8D8C8] bg-[#FBF8F3]/90"
               }`}
             >
-              <h2 className="mb-3 text-2xl font-bold text-[#2D6A73]">
+              <div className="mb-4 text-4xl">{session.icon}</div>
+
+              <h2 className="mb-3 text-2xl font-bold text-[#7A4A8D]">
                 {session.title}
               </h2>
 
-              <p className="mb-6">{session.text}</p>
+              <p className="mb-6 leading-7 text-[#4B4B4B]">{session.text}</p>
 
-              <div className="mb-6 rounded-2xl bg-[#FAF7F2]/80 p-4">
-                <p className="font-semibold text-[#2D6A73]">
+              <div className="mb-6 rounded-2xl bg-white/70 p-4">
+                <p className="font-bold text-[#2D6A73]">
                   {session.duration}
                 </p>
-                <p className="mt-2 text-3xl font-bold text-[#D65A7A]">
+                <p className="mt-2 text-3xl font-bold text-[#7A4A8D]">
                   {session.price}
                 </p>
               </div>
@@ -238,20 +261,24 @@ export default function BookSessionPage() {
               <button
                 type="button"
                 onClick={() => loadSlots(session.title)}
-                className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white"
+                className={`rounded-xl px-6 py-3 font-bold transition ${
+                  sessionType === session.title
+                    ? "bg-[#7A4A8D] text-white"
+                    : "bg-[#2D6A73] text-white hover:bg-[#245961]"
+                }`}
               >
-                View Upcoming Availability
+                View Availability
               </button>
             </motion.div>
           ))}
         </div>
 
-        <section className="mt-16 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md">
+        <section className="mt-16 rounded-3xl border border-[#E8D8C8] bg-[#FBF8F3]/90 p-8 shadow-xl">
           <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">
             Available Slots
           </h2>
 
-          <p className="mb-6 text-sm text-gray-600">
+          <p className="mb-6 text-sm text-[#4B4B4B]">
             View upcoming availability or search for a specific date.
           </p>
 
@@ -260,13 +287,13 @@ export default function BookSessionPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              className="rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D]"
             />
 
             <button
               type="button"
               onClick={handleDateSearch}
-              className="rounded-xl bg-[#D65A7A] px-6 py-3 font-medium text-white"
+              className="rounded-xl bg-[#7A4A8D] px-6 py-3 font-bold text-white transition hover:-translate-y-1 hover:shadow-lg"
             >
               Search This Date
             </button>
@@ -277,7 +304,7 @@ export default function BookSessionPage() {
                 setSelectedDate("");
                 loadSlots(sessionType);
               }}
-              className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white"
+              className="rounded-xl bg-[#2D6A73] px-6 py-3 font-bold text-white transition hover:-translate-y-1 hover:shadow-lg"
             >
               Show Upcoming Slots
             </button>
@@ -285,7 +312,7 @@ export default function BookSessionPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             {slots.length === 0 && (
-              <p className="md:col-span-3">
+              <p className="rounded-2xl bg-white/70 p-5 text-[#4B4B4B] md:col-span-3">
                 No available slots for this session yet.
               </p>
             )}
@@ -295,10 +322,10 @@ export default function BookSessionPage() {
                 key={slot.id}
                 type="button"
                 onClick={() => setSelectedSlot(slot)}
-                className={`rounded-2xl p-5 text-left shadow-sm ${
+                className={`rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-1 ${
                   selectedSlot?.id === slot.id
-                    ? "bg-[#2D6A73] text-white"
-                    : "bg-[#FAF7F2]/80 text-[#2B2B2B]"
+                    ? "border-[#7A4A8D] bg-[#7A4A8D] text-white"
+                    : "border-[#E8D8C8] bg-white/70 text-[#2B2B2B] hover:border-[#7A4A8D]"
                 }`}
               >
                 <p className="font-bold">{slot.session_type}</p>
@@ -306,7 +333,7 @@ export default function BookSessionPage() {
                 <p>
                   {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                 </p>
-                <p>£{slot.price}</p>
+                <p className="mt-2 font-bold">£{slot.price}</p>
               </button>
             ))}
           </div>
@@ -316,15 +343,15 @@ export default function BookSessionPage() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-16 rounded-3xl border border-white/30 bg-white/60 p-8 shadow-xl backdrop-blur-md"
+          className="mt-16 rounded-3xl border border-[#E8D8C8] bg-[#FBF8F3]/90 p-8 shadow-xl"
         >
           <h2 className="mb-6 text-3xl font-bold text-[#2D6A73]">
             Your Details
           </h2>
 
           {selectedSlot && (
-            <div className="mb-6 rounded-2xl bg-[#FAF7F2]/80 p-5">
-              <p className="font-bold text-[#D65A7A]">Selected Booking</p>
+            <div className="mb-6 rounded-2xl border border-[#E8D8C8] bg-white/70 p-5">
+              <p className="font-bold text-[#7A4A8D]">Selected Booking</p>
               <p>Session: {selectedSlot.session_type}</p>
               <p>Date: {formatDate(selectedSlot.slot_date)}</p>
               <p>
@@ -342,7 +369,7 @@ export default function BookSessionPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              className="rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D]"
             />
 
             <input
@@ -351,7 +378,7 @@ export default function BookSessionPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+              className="rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D]"
             />
 
             <input
@@ -359,7 +386,7 @@ export default function BookSessionPage() {
               placeholder="Phone number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A] md:col-span-2"
+              className="rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D] md:col-span-2"
             />
 
             <textarea
@@ -367,18 +394,18 @@ export default function BookSessionPage() {
               placeholder="Tell us what support you are looking for"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A] md:col-span-2"
+              className="rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D] md:col-span-2"
             />
 
             <button
               type="submit"
-              className="rounded-xl bg-[#2D6A73] px-6 py-3 font-medium text-white transition duration-300 hover:-translate-y-1 hover:shadow-xl md:col-span-2"
+              className="rounded-xl bg-[#2D6A73] px-6 py-3 font-bold text-white transition duration-300 hover:-translate-y-1 hover:bg-[#245961] hover:shadow-xl md:col-span-2"
             >
               Pay & Confirm Booking
             </button>
 
             {status && (
-              <p className="font-semibold text-[#D65A7A] md:col-span-2">
+              <p className="rounded-xl bg-white/70 p-3 font-semibold text-[#7A4A8D] md:col-span-2">
                 {status}
               </p>
             )}

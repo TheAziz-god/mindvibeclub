@@ -14,66 +14,74 @@ export default function Navbar() {
     ["About", "/about"],
     ["Services", "/services"],
     ["Resources", "/resources"],
-    ["Book", "/book-session"],
+    ["FAQ", "/faq"],
     ["Contact", "/contact"],
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#E8DDD3] bg-[#FAF7F2]/95 backdrop-blur-sm">
+    <nav className="sticky top-0 z-50 border-b border-[#E8D8C8] bg-[#FBF8F3]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/">
+        {/* Logo */}
+        <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
             alt="MindVibeClub Logo"
             width={220}
             height={110}
             priority
-            className="w-[120px] md:w-[180px]"
+            className="w-[130px] md:w-[190px]"
           />
         </Link>
 
-        <div className="hidden items-center gap-8 text-sm font-medium md:flex">
+        {/* Desktop */}
+        <div className="hidden items-center gap-8 md:flex">
           {links.map(([name, href]) => (
             <Link
               key={name}
               href={href}
-              className={`transition duration-300 hover:text-[#D65A7A] ${
+              className={`relative text-sm font-semibold transition duration-300 ${
                 pathname === href
-                  ? "font-bold text-[#D65A7A]"
-                  : "text-[#2B2B2B]"
+                  ? "text-[#7A4A8D]"
+                  : "text-[#2B2B2B] hover:text-[#7A4A8D]"
               }`}
             >
               {name}
+
+              {pathname === href && (
+                <span className="absolute -bottom-2 left-0 h-[2px] w-full rounded-full bg-[#7A4A8D]" />
+              )}
             </Link>
           ))}
 
           <Link
             href="/book-session"
-            className="rounded-lg bg-[#2D6A73] px-5 py-2 text-white transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+            className="rounded-xl bg-[#2D6A73] px-5 py-2.5 font-bold text-white transition duration-300 hover:-translate-y-1 hover:bg-[#245961] hover:shadow-xl"
           >
-            Book Now
+            Book Session
           </Link>
         </div>
 
+        {/* Mobile Button */}
         <button
           onClick={() => setOpen(!open)}
-          className="text-3xl text-[#2D6A73] md:hidden"
+          className="rounded-lg p-2 text-3xl text-[#2D6A73] md:hidden"
         >
-          ☰
+          {open ? "✕" : "☰"}
         </button>
       </div>
 
+      {/* Mobile Menu */}
       {open && (
-        <div className="border-t border-[#E8DDD3] px-6 pb-5 md:hidden">
-          <div className="flex flex-col gap-4 pt-4 font-medium">
+        <div className="border-t border-[#E8D8C8] bg-[#FBF8F3] px-6 pb-6 md:hidden">
+          <div className="flex flex-col gap-4 pt-5">
             {links.map(([name, href]) => (
               <Link
                 key={name}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={`transition duration-300 ${
+                className={`font-semibold transition ${
                   pathname === href
-                    ? "font-bold text-[#D65A7A]"
+                    ? "text-[#7A4A8D]"
                     : "text-[#2B2B2B]"
                 }`}
               >
@@ -84,9 +92,9 @@ export default function Navbar() {
             <Link
               href="/book-session"
               onClick={() => setOpen(false)}
-              className="rounded-lg bg-[#2D6A73] px-5 py-3 text-center text-white transition duration-300 hover:shadow-lg"
+              className="mt-2 rounded-xl bg-[#2D6A73] px-5 py-3 text-center font-bold text-white transition hover:bg-[#245961]"
             >
-              Book Now
+              Book Session
             </Link>
           </div>
         </div>

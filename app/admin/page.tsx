@@ -89,15 +89,23 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+   const { data: userData, error: userError } = await supabase.auth.getUser();
 
-    if (!user || user.email !== "azizkhan69512@gmail.com") {
-      await supabase.auth.signOut();
-      router.push("/login");
-      return;
-    }
+if (userError) {
+  console.error("Admin auth error:", userError.message);
+  setLoading(false);
+  router.push("/login");
+  return;
+}
+
+const user = userData.user;
+
+if (!user || user.email !== "azizkhan69512@gmail.com") {
+  await supabase.auth.signOut();
+  setLoading(false);
+  router.push("/login");
+  return;
+}
 
     const { data: messagesData } = await supabase
       .from("contact_messages")

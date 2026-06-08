@@ -2,64 +2,258 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function ServicesPage() {
-  const services = [
-    ["1-to-1 Wellbeing Support", "Personalised sessions focused on confidence, emotional wellbeing, resilience and personal growth."],
-    ["Group Wellbeing Sessions", "Interactive sessions where young people can learn, share, build confidence and grow together."],
-    ["Stress & Anxiety Support", "Practical wellbeing strategies to help young people manage pressure, school stress and emotions."],
-    ["Confidence & Motivation Coaching", "Support to help students believe in themselves, set goals and develop positive habits."],
-    ["Parent Support & Guidance", "Helpful guidance for parents who want to support their child’s wellbeing journey."],
-    ["School Partnerships", "Wellbeing workshops and programmes for schools, youth organisations and community groups."],
+  const [openSupport, setOpenSupport] = useState<string | null>(null);
+
+  const bookableServices = [
+    {
+      title: "Intro Session",
+      text: "A gentle first session to understand needs, build comfort and explore the right support pathway.",
+      duration: "30 minutes",
+      price: "£25",
+      icon: "🌿",
+    },
+    {
+      title: "1-to-1 Wellbeing Support",
+      text: "Personalised sessions focused on confidence, emotional wellbeing, resilience and personal growth.",
+      duration: "50 minutes",
+      price: "£40",
+      icon: "🧠",
+    },
+    {
+      title: "Group Wellbeing Sessions",
+      text: "Interactive sessions where young people can learn, share, build confidence and grow together.",
+      duration: "60 minutes",
+      price: "£15",
+      icon: "🤝",
+    },
+  ];
+
+  const supportAreas = [
+    {
+      title: "Stress & Anxiety Support",
+      text: "Practical wellbeing strategies to help young people manage pressure, school stress and emotions.",
+      tag: "Support Focus",
+      icon: "🕊️",
+      helps: [
+        "Understanding worry and stress triggers",
+        "Calming strategies for school pressure",
+        "Simple tools for emotional regulation",
+      ],
+      recommended: "Intro Session",
+    },
+    {
+      title: "Confidence & Motivation Coaching",
+      text: "Support to help students believe in themselves, set goals and develop positive habits.",
+      tag: "Support Focus",
+      icon: "✨",
+      helps: [
+        "Building self-belief",
+        "Setting small achievable goals",
+        "Creating positive routines and motivation",
+      ],
+      recommended: "1-to-1 Support",
+    },
+    {
+      title: "Parent Support & Guidance",
+      text: "Helpful guidance for parents who want to support their child’s wellbeing journey.",
+      tag: "Guidance",
+      icon: "💬",
+      helps: [
+        "Understanding how to support your child",
+        "Knowing when extra support may help",
+        "Working together with school or community support",
+      ],
+      recommended: "Contact Us",
+    },
   ];
 
   return (
-    <main className="min-h-screen bg-[#FAF7F2] text-[#2B2B2B]">
+    <main className="mindvibe-bg min-h-screen text-[#2B2B2B]">
       <section className="mx-auto max-w-6xl px-6 py-20">
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 text-center text-5xl font-bold text-[#D65A7A]"
+          className="mindvibe-frame relative mb-14 overflow-hidden px-8 py-16 text-center"
         >
-          Our Services
-        </motion.h1>
+          <span className="mindvibe-doodle top-right">✿</span>
+          <span className="mindvibe-doodle bottom-left">✿</span>
 
-        <motion.p
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mx-auto mb-14 max-w-3xl text-center text-lg"
-        >
-          Supportive wellbeing services for young people, parents, schools and community groups.
-        </motion.p>
+          <p className="mb-4 font-bold uppercase tracking-[0.25em] text-[#2D8B87]">
+            Support Options
+          </p>
 
-        <div className="grid gap-8 md:grid-cols-2">
-          {services.map(([title, text], index) => (
+          <h1 className="text-5xl font-bold text-[#7A4A8D] md:text-6xl">
+            Our Services
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#4B4B4B]">
+            Supportive wellbeing services for young people, parents, schools
+            and community groups — designed to feel calm, practical and safe.
+          </p>
+        </motion.div>
+
+        <h2 className="mb-6 text-3xl font-bold text-[#2D6A73]">
+          Bookable Sessions
+        </h2>
+
+        <div className="grid gap-8 md:grid-cols-3">
+          {bookableServices.map((service, index) => (
             <motion.div
-              key={title}
+              key={service.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -8 }}
+              whileHover={{ y: -8, scale: 1.02 }}
               transition={{ delay: index * 0.05 }}
               viewport={{ once: true }}
-              className="rounded-2xl border border-[#E8DDD3] bg-white p-8 shadow-sm"
+              className="rounded-3xl border border-[#E8D8C8] bg-[#FBF8F3]/90 p-7 shadow-xl transition duration-300 hover:shadow-2xl"
             >
-              <h2 className="mb-4 text-2xl font-bold text-[#2D6A73]">
-                {title}
-              </h2>
-              <p>{text}</p>
+              <div className="mb-5 flex items-center justify-between">
+                <span className="text-4xl">{service.icon}</span>
+                <span className="rounded-full bg-[#E8D8C8]/70 px-4 py-1 text-sm font-bold text-[#7A4A8D]">
+                  {service.duration}
+                </span>
+              </div>
+
+              <h3 className="mb-4 text-2xl font-bold text-[#7A4A8D]">
+                {service.title}
+              </h3>
+
+              <p className="mb-6 leading-7 text-[#4B4B4B]">{service.text}</p>
+
+              <div className="mt-auto flex items-center justify-between border-t border-[#E8D8C8] pt-5">
+                <span className="font-bold text-[#2D6A73]">
+                  {service.price}
+                </span>
+
+                <Link
+                  href="/book-session"
+                  className="rounded-xl bg-[#2D6A73] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#245961]"
+                >
+                  Book
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="mt-14 text-center">
+        <div className="mt-16 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-[#2D6A73]">
+              Support Focus Areas
+            </h2>
+            <p className="mt-2 max-w-2xl text-[#4B4B4B]">
+              These are not separate checkout products. They are key areas we
+              can focus on during sessions.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-8 md:grid-cols-3">
+          {supportAreas.map((area, index) => {
+            const isOpen = openSupport === area.title;
+
+            return (
+              <motion.div
+                key={area.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ delay: index * 0.05 }}
+                viewport={{ once: true }}
+                className="rounded-3xl border border-[#E8D8C8] bg-[#FBF8F3]/90 p-7 shadow-xl transition duration-300 hover:shadow-2xl"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-4xl">{area.icon}</span>
+                  <span className="rounded-full bg-[#E8D8C8]/70 px-4 py-1 text-sm font-bold text-[#7A4A8D]">
+                    {area.tag}
+                  </span>
+                </div>
+
+                <h3 className="mb-4 text-2xl font-bold text-[#7A4A8D]">
+                  {area.title}
+                </h3>
+
+                <p className="mb-6 leading-7 text-[#4B4B4B]">{area.text}</p>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenSupport(isOpen ? null : area.title)}
+                  className="rounded-xl bg-[#7A4A8D] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#653A78]"
+                >
+                  {isOpen ? "Hide Details" : "View Support Details"}
+                </button>
+
+                {isOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-6 rounded-2xl border border-[#E8D8C8] bg-white/70 p-5"
+                  >
+                    <p className="mb-3 font-bold text-[#2D6A73]">
+                      This can help with:
+                    </p>
+
+                    <ul className="space-y-2 text-[#4B4B4B]">
+                      {area.helps.map((item) => (
+                        <li key={item}>✓ {item}</li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-5 rounded-xl bg-[#F8F4EF] p-4">
+                      <p className="text-sm font-bold text-[#7A4A8D]">
+                        Recommended next step:
+                      </p>
+                      <p className="mt-1 text-[#2D6A73]">
+                        {area.recommended === "Contact Us"
+                          ? "Contact us so we can guide you properly."
+                          : `Book an ${area.recommended}.`}
+                      </p>
+                    </div>
+
+                    <Link
+                      href={
+                        area.recommended === "Contact Us"
+                          ? "/contact"
+                          : "/book-session"
+                      }
+                      className="mt-4 inline-block rounded-xl bg-[#2D6A73] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#245961]"
+                    >
+                      {area.recommended === "Contact Us"
+                        ? "Contact Us"
+                        : "Book Recommended Session"}
+                    </Link>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-16 rounded-3xl bg-gradient-to-r from-[#7A4A8D] to-[#2D6A73] p-10 text-center text-white shadow-2xl"
+        >
+          <h2 className="mb-4 text-3xl font-bold">
+            Not sure which support is right?
+          </h2>
+
+          <p className="mx-auto mb-7 max-w-2xl">
+            Start with an intro session. It gives us a calm space to understand
+            what support may be most helpful.
+          </p>
+
           <Link
             href="/book-session"
-            className="rounded-lg bg-[#2D6A73] px-6 py-3 font-medium text-white transition hover:shadow-lg"
+            className="rounded-xl bg-white px-6 py-3 font-bold text-[#7A4A8D] transition hover:-translate-y-1 hover:shadow-xl"
           >
-            Book a Session
+            Book an Intro Session
           </Link>
-        </div>
+        </motion.div>
       </section>
     </main>
   );
