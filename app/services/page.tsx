@@ -14,6 +14,7 @@ export default function ServicesPage() {
       duration: "30 minutes",
       price: "£25",
       icon: "🌿",
+      href: "/services/intro-session",
     },
     {
       title: "1-to-1 Wellbeing Support",
@@ -21,6 +22,7 @@ export default function ServicesPage() {
       duration: "50 minutes",
       price: "£40",
       icon: "🧠",
+      href: "/services/one-to-one-support",
     },
     {
       title: "Group Wellbeing Sessions",
@@ -28,6 +30,7 @@ export default function ServicesPage() {
       duration: "60 minutes",
       price: "£15",
       icon: "🤝",
+      href: "/services/group-sessions",
     },
   ];
 
@@ -37,11 +40,7 @@ export default function ServicesPage() {
       text: "Practical wellbeing strategies to help young people manage pressure, school stress and emotions.",
       tag: "Support Focus",
       icon: "🕊️",
-      helps: [
-        "Understanding worry and stress triggers",
-        "Calming strategies for school pressure",
-        "Simple tools for emotional regulation",
-      ],
+      href: "/services/stress-anxiety-support",
       recommended: "Intro Session",
     },
     {
@@ -49,11 +48,7 @@ export default function ServicesPage() {
       text: "Support to help students believe in themselves, set goals and develop positive habits.",
       tag: "Support Focus",
       icon: "✨",
-      helps: [
-        "Building self-belief",
-        "Setting small achievable goals",
-        "Creating positive routines and motivation",
-      ],
+      href: "/services/confidence-coaching",
       recommended: "1-to-1 Support",
     },
     {
@@ -61,11 +56,7 @@ export default function ServicesPage() {
       text: "Helpful guidance for parents who want to support their child’s wellbeing journey.",
       tag: "Guidance",
       icon: "💬",
-      helps: [
-        "Understanding how to support your child",
-        "Knowing when extra support may help",
-        "Working together with school or community support",
-      ],
+      href: "/services/parent-support",
       recommended: "Contact Us",
     },
   ];
@@ -123,32 +114,39 @@ export default function ServicesPage() {
 
               <p className="mb-6 leading-7 text-[#4B4B4B]">{service.text}</p>
 
-              <div className="mt-auto flex items-center justify-between border-t border-[#E8D8C8] pt-5">
+              <div className="flex items-center justify-between border-t border-[#E8D8C8] pt-5">
                 <span className="font-bold text-[#2D6A73]">
                   {service.price}
                 </span>
 
-                <Link
-                  href="/book-session"
-                  className="rounded-xl bg-[#2D6A73] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#245961]"
-                >
-                  Book
-                </Link>
+                <div className="flex gap-2">
+                  <Link
+                    href={service.href}
+                    className="rounded-xl bg-[#7A4A8D] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#653A78]"
+                  >
+                    Details
+                  </Link>
+
+                  <Link
+                    href="/book-session"
+                    className="rounded-xl bg-[#2D6A73] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#245961]"
+                  >
+                    Book
+                  </Link>
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="mt-16 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold text-[#2D6A73]">
-              Support Focus Areas
-            </h2>
-            <p className="mt-2 max-w-2xl text-[#4B4B4B]">
-              These are not separate checkout products. They are key areas we
-              can focus on during sessions.
-            </p>
-          </div>
+        <div className="mt-16">
+          <h2 className="text-3xl font-bold text-[#2D6A73]">
+            Support Focus Areas
+          </h2>
+          <p className="mt-2 max-w-2xl text-[#4B4B4B]">
+            These focus areas can be explored during sessions. Click below to
+            learn what each type of support can help with.
+          </p>
         </div>
 
         <div className="mt-8 grid gap-8 md:grid-cols-3">
@@ -178,13 +176,22 @@ export default function ServicesPage() {
 
                 <p className="mb-6 leading-7 text-[#4B4B4B]">{area.text}</p>
 
-                <button
-                  type="button"
-                  onClick={() => setOpenSupport(isOpen ? null : area.title)}
-                  className="rounded-xl bg-[#7A4A8D] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#653A78]"
-                >
-                  {isOpen ? "Hide Details" : "View Support Details"}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={area.href}
+                    className="rounded-xl bg-[#7A4A8D] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#653A78]"
+                  >
+                    Learn More
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenSupport(isOpen ? null : area.title)}
+                    className="rounded-xl bg-[#2D6A73] px-4 py-2 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#245961]"
+                  >
+                    {isOpen ? "Hide Step" : "Best Next Step"}
+                  </button>
+                </div>
 
                 {isOpen && (
                   <motion.div
@@ -192,26 +199,15 @@ export default function ServicesPage() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="mt-6 rounded-2xl border border-[#E8D8C8] bg-white/70 p-5"
                   >
-                    <p className="mb-3 font-bold text-[#2D6A73]">
-                      This can help with:
+                    <p className="text-sm font-bold text-[#7A4A8D]">
+                      Recommended next step:
                     </p>
 
-                    <ul className="space-y-2 text-[#4B4B4B]">
-                      {area.helps.map((item) => (
-                        <li key={item}>✓ {item}</li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-5 rounded-xl bg-[#F8F4EF] p-4">
-                      <p className="text-sm font-bold text-[#7A4A8D]">
-                        Recommended next step:
-                      </p>
-                      <p className="mt-1 text-[#2D6A73]">
-                        {area.recommended === "Contact Us"
-                          ? "Contact us so we can guide you properly."
-                          : `Book an ${area.recommended}.`}
-                      </p>
-                    </div>
+                    <p className="mt-1 text-[#2D6A73]">
+                      {area.recommended === "Contact Us"
+                        ? "Contact us so we can guide you properly."
+                        : `Book ${area.recommended}.`}
+                    </p>
 
                     <Link
                       href={
