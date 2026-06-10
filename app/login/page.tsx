@@ -16,6 +16,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
 
+  async function handleGoogleLogin() {
+    setStatus("Connecting to Google...");
+
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback`
+        : `${REDIRECT_URL}/auth/callback`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      setStatus(error.message);
+    }
+  }
+
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("Signing you in...");
@@ -132,6 +152,23 @@ export default function LoginPage() {
             </button>
           </div>
 
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-[#E8D8C8] bg-white px-5 py-3 font-bold text-[#2B2B2B] transition hover:-translate-y-1 hover:shadow-lg"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-lg font-bold text-[#4285F4]">
+              G
+            </span>
+            Continue with Google
+          </button>
+
+          <div className="mb-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-[#E8D8C8]" />
+            <span className="text-sm font-semibold text-[#7A4A8D]">or</span>
+            <div className="h-px flex-1 bg-[#E8D8C8]" />
+          </div>
+
           {mode === "login" && (
             <form onSubmit={handleLogin}>
               <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">
@@ -181,6 +218,13 @@ export default function LoginPage() {
               >
                 Sign In
               </button>
+
+              <Link
+                href="/forgot-password"
+                className="mt-4 block text-center font-semibold text-[#7A4A8D] hover:text-[#2D6A73]"
+              >
+                Forgot Password?
+              </Link>
             </form>
           )}
 
