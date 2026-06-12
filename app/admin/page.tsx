@@ -27,6 +27,16 @@ type Booking = {
   created_at: string;
 };
 
+type BookingRequest = {
+  id: string;
+  booking_id: string;
+  customer_email: string;
+  request_type: string;
+  message: string | null;
+  status: string;
+  created_at: string;
+};
+
 type BookingSlot = {
   id: string;
   session_type: string;
@@ -57,11 +67,13 @@ export default function AdminPage() {
 
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [slots, setSlots] = useState<BookingSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [requestFilter, setRequestFilter] = useState("all");
   const [slotFilter, setSlotFilter] = useState("all");
   const [deleteStartDate, setDeleteStartDate] = useState("");
   const [deleteEndDate, setDeleteEndDate] = useState("");
@@ -89,23 +101,23 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
 
-   const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
 
-if (userError) {
-  console.error("Admin auth error:", userError.message);
-  setLoading(false);
-  router.push("/login");
-  return;
-}
+    if (userError) {
+      console.error("Admin auth error:", userError.message);
+      setLoading(false);
+      router.push("/login");
+      return;
+    }
 
-const user = userData.user;
+    const user = userData.user;
 
-if (!user || user.email !== "azizkhan69512@gmail.com") {
-  await supabase.auth.signOut();
-  setLoading(false);
-  router.push("/login");
-  return;
-}
+    if (!user || user.email !== "azizkhan69512@gmail.com") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      router.push("/login");
+      return;
+    }
 
     const { data: messagesData } = await supabase
       .from("contact_messages")
@@ -116,6 +128,15 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
       .from("bookings")
       .select("*")
       .order("created_at", { ascending: false });
+
+    const { data: requestsData, error: requestsError } = await supabase
+      .from("booking_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (requestsError) {
+      console.error("Booking requests error:", requestsError.message);
+    }
 
     const { data: slotsData } = await supabase
       .from("booking_slots")
@@ -134,6 +155,7 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
 
     if (messagesData) setMessages(messagesData);
     if (bookingsData) setBookings(bookingsData);
+    if (requestsData) setRequests(requestsData);
     if (slotsData) setSlots(slotsData);
 
     setLoading(false);
@@ -185,6 +207,63 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
+  }
+
+  function getBookingForRequest(bookingId: string) {
+    return bookings.find((booking) => booking.id === bookingId);
+  }
+
+  function requestStatusStyle(status: string) {
+    if (status === "approved") return "bg-green-100 text-green-700";
+    if (status === "declined") return "bg-red-100 text-red-700";
+    if (status === "completed") return "bg-blue-100 text-blue-700";
+
+    return "bg-yellow-100 text-yellow-700";
+  }
+
+  async function updateRequestStatus(id: string, status: string) {
+    const { error } = await supabase
+      .from("booking_requests")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not update request: " + error.message);
+      return;
+    }
+
+    loadData();
+  }
+
+  async function approveCancelRequest(request: BookingRequest) {
+    const booking = getBookingForRequest(request.booking_id);
+
+    const confirmApprove = confirm(
+      "Approve this cancellation request? This will mark the booking as cancelled and free the slot."
+    );
+
+    if (!confirmApprove) return;
+
+    if (booking) {
+      await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", booking.id);
+
+      if (booking.slot_id) {
+        await supabase
+          .from("booking_slots")
+          .update({ is_booked: false })
+          .eq("id", booking.slot_id);
+      }
+    }
+
+    await supabase
+      .from("booking_requests")
+      .update({ status: "approved" })
+      .eq("id", request.id);
+
+    loadData();
   }
 
   async function generateSlots() {
@@ -436,6 +515,25 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
     return matchesSearch && matchesStatus;
   });
 
+  const filteredRequests = requests.filter((request) => {
+    const booking = getBookingForRequest(request.booking_id);
+    const search = searchTerm.toLowerCase();
+
+    const matchesSearch =
+      request.customer_email.toLowerCase().includes(search) ||
+      request.request_type.toLowerCase().includes(search) ||
+      (request.message || "").toLowerCase().includes(search) ||
+      (booking?.full_name || "").toLowerCase().includes(search) ||
+      (booking?.session_type || "").toLowerCase().includes(search);
+
+    const matchesFilter =
+      requestFilter === "all" ||
+      request.status === requestFilter ||
+      request.request_type === requestFilter;
+
+    return matchesSearch && matchesFilter;
+  });
+
   const filteredSlots = slots.filter((slot) => {
     if (slotFilter === "available") return !slot.is_booked;
     if (slotFilter === "booked") return slot.is_booked;
@@ -448,6 +546,9 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
 
   const availableSlots = slots.filter((slot) => !slot.is_booked).length;
   const bookedSlots = slots.filter((slot) => slot.is_booked).length;
+  const pendingRequests = requests.filter(
+    (request) => request.status === "pending"
+  ).length;
   const totalRevenue = bookings
     .filter((booking) => booking.payment_status === "paid")
     .reduce((sum, booking) => sum + Number(booking.session_price || 0), 0);
@@ -461,7 +562,7 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
               Admin Dashboard
             </h1>
             <p className="mt-4 text-lg">
-              Manage contact messages, bookings and available appointment slots.
+              Manage contact messages, bookings, customer requests and available appointment slots.
             </p>
           </div>
 
@@ -473,7 +574,7 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
           </button>
         </div>
 
-        <div className="mb-10 grid gap-5 md:grid-cols-5">
+        <div className="mb-10 grid gap-5 md:grid-cols-6">
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
             <p className="text-3xl font-bold text-[#D65A7A]">
               {messages.length}
@@ -486,6 +587,13 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
               {bookings.length}
             </p>
             <p className="font-semibold text-[#2D6A73]">Bookings</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
+            <p className="text-3xl font-bold text-[#D65A7A]">
+              {pendingRequests}
+            </p>
+            <p className="font-semibold text-[#2D6A73]">Pending Requests</p>
           </div>
 
           <div className="rounded-2xl bg-white/70 p-5 text-center shadow-md">
@@ -507,6 +615,131 @@ if (!user || user.email !== "azizkhan69512@gmail.com") {
             <p className="font-semibold text-[#2D6A73]">Total Revenue</p>
           </div>
         </div>
+
+        <section className="mb-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
+          <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">
+            Customer Requests
+          </h2>
+
+          <p className="mb-5 text-sm text-gray-600">
+            Review reschedule and cancellation requests from customer dashboards.
+          </p>
+
+          <div className="mb-5">
+            <select
+              value={requestFilter}
+              onChange={(e) => setRequestFilter(e.target.value)}
+              className="rounded-xl border border-[#E8DDD3] bg-white/80 p-3 outline-none focus:border-[#D65A7A]"
+            >
+              <option value="all">All Requests</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="declined">Declined</option>
+              <option value="completed">Completed</option>
+              <option value="reschedule">Reschedule Requests</option>
+              <option value="cancel">Cancel Requests</option>
+            </select>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {filteredRequests.length === 0 && !loading && (
+              <p>No customer requests found.</p>
+            )}
+
+            {filteredRequests.map((request) => {
+              const booking = getBookingForRequest(request.booking_id);
+
+              return (
+                <div
+                  key={request.id}
+                  className="rounded-2xl bg-[#FAF7F2]/80 p-5 shadow-sm"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold capitalize text-[#D65A7A]">
+                        {request.request_type} Request
+                      </p>
+                      <p className="text-sm">{request.customer_email}</p>
+                    </div>
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${requestStatusStyle(
+                        request.status
+                      )}`}
+                    >
+                      {request.status}
+                    </span>
+                  </div>
+
+                  {booking && (
+                    <div className="mb-3 rounded-xl bg-white/80 p-3 text-sm">
+                      <p>
+                        <strong>Customer:</strong> {booking.full_name}
+                      </p>
+                      <p>
+                        <strong>Session:</strong> {booking.session_type}
+                      </p>
+                      {booking.preferred_date && (
+                        <p>
+                          <strong>Date:</strong>{" "}
+                          {formatDisplayDate(booking.preferred_date)}
+                        </p>
+                      )}
+                      <p>
+                        <strong>Booking Status:</strong>{" "}
+                        {booking.status || "new"}
+                      </p>
+                      <p>
+                        <strong>Payment:</strong>{" "}
+                        {booking.payment_status || "unpaid"}
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="mb-3">{request.message || "No message added."}</p>
+
+                  <p className="text-xs text-gray-500">Request ID: {request.id}</p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {new Date(request.created_at).toLocaleString()}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {request.request_type === "cancel" && (
+                      <button
+                        onClick={() => approveCancelRequest(request)}
+                        className="rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-700"
+                      >
+                        Approve Cancel
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => updateRequestStatus(request.id, "approved")}
+                      className="rounded-lg bg-[#2D6A73] px-3 py-2 text-sm text-white"
+                    >
+                      Approve
+                    </button>
+
+                    <button
+                      onClick={() => updateRequestStatus(request.id, "completed")}
+                      className="rounded-lg bg-[#D65A7A] px-3 py-2 text-sm text-white"
+                    >
+                      Complete
+                    </button>
+
+                    <button
+                      onClick={() => updateRequestStatus(request.id, "declined")}
+                      className="rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-600"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <section className="mb-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md">
           <h2 className="mb-2 text-3xl font-bold text-[#2D6A73]">

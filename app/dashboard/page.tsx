@@ -20,12 +20,30 @@ type Booking = {
   created_at: string;
 };
 
+type BookingRequest = {
+  id: string;
+  booking_id: string;
+  customer_email: string;
+  request_type: string;
+  message: string | null;
+  status: string;
+  created_at: string;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [requestType, setRequestType] = useState<"reschedule" | "cancel" | null>(
+    null
+  );
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requestStatus, setRequestStatus] = useState("");
 
   useEffect(() => {
     async function loadDashboard() {
@@ -40,17 +58,28 @@ export default function DashboardPage() {
       const email = userData.user.email || "";
       setUserEmail(email);
 
-      const { data, error } = await supabase
+      const { data: bookingData, error: bookingError } = await supabase
         .from("bookings")
         .select("*")
         .eq("email", email)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Dashboard bookings error:", error.message);
+      if (bookingError) {
+        console.error("Dashboard bookings error:", bookingError.message);
       }
 
-      setBookings(data || []);
+      const { data: requestData, error: requestError } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .eq("customer_email", email)
+        .order("created_at", { ascending: false });
+
+      if (requestError) {
+        console.error("Dashboard request error:", requestError.message);
+      }
+
+      setBookings(bookingData || []);
+      setRequests(requestData || []);
       setLoading(false);
     }
 
@@ -60,6 +89,65 @@ export default function DashboardPage() {
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/");
+  }
+
+  function openRequestModal(
+    booking: Booking,
+    type: "reschedule" | "cancel"
+  ) {
+    setSelectedBooking(booking);
+    setRequestType(type);
+    setRequestMessage("");
+    setRequestStatus("");
+  }
+
+  function closeRequestModal() {
+    setSelectedBooking(null);
+    setRequestType(null);
+    setRequestMessage("");
+    setRequestStatus("");
+  }
+
+  async function submitBookingRequest(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!selectedBooking || !requestType || !userEmail) {
+      setRequestStatus("Something went wrong. Please try again.");
+      return;
+    }
+
+    if (!requestMessage.trim()) {
+      setRequestStatus("Please add a short message for your request.");
+      return;
+    }
+
+    setRequestStatus("Submitting request...");
+
+    const { data, error } = await supabase
+      .from("booking_requests")
+      .insert([
+        {
+          booking_id: selectedBooking.id,
+          customer_email: userEmail,
+          request_type: requestType,
+          message: requestMessage,
+          status: "pending",
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      setRequestStatus(error.message);
+      return;
+    }
+
+    setRequests((prev) => [data, ...prev]);
+    setRequestStatus("Request submitted successfully.");
+
+    setTimeout(() => {
+      closeRequestModal();
+    }, 1200);
   }
 
   function getBookingDate(booking: Booking) {
@@ -88,17 +176,9 @@ export default function DashboardPage() {
   function statusStyle(status: string | null) {
     const value = status || "pending";
 
-    if (value === "confirmed") {
-      return "bg-[#E9F7EF] text-[#1E7A4F]";
-    }
-
-    if (value === "completed") {
-      return "bg-[#EEF2FF] text-[#4F46E5]";
-    }
-
-    if (value === "cancelled") {
-      return "bg-[#FFF1F2] text-[#D65A7A]";
-    }
+    if (value === "confirmed") return "bg-[#E9F7EF] text-[#1E7A4F]";
+    if (value === "completed") return "bg-[#EEF2FF] text-[#4F46E5]";
+    if (value === "cancelled") return "bg-[#FFF1F2] text-[#D65A7A]";
 
     return "bg-[#F8F4EF] text-[#7A4A8D]";
   }
@@ -106,15 +186,31 @@ export default function DashboardPage() {
   function paymentStyle(status: string | null) {
     const value = status || "unpaid";
 
-    if (value === "paid") {
-      return "bg-[#E9F7EF] text-[#1E7A4F]";
-    }
-
-    if (value === "refunded") {
-      return "bg-[#EEF2FF] text-[#4F46E5]";
-    }
+    if (value === "paid") return "bg-[#E9F7EF] text-[#1E7A4F]";
+    if (value === "refunded") return "bg-[#EEF2FF] text-[#4F46E5]";
 
     return "bg-[#FFF7ED] text-[#B45309]";
+  }
+
+  function requestStyle(status: string) {
+    if (status === "approved") return "bg-[#E9F7EF] text-[#1E7A4F]";
+    if (status === "declined") return "bg-[#FFF1F2] text-[#D65A7A]";
+    if (status === "completed") return "bg-[#EEF2FF] text-[#4F46E5]";
+
+    return "bg-[#FFF7ED] text-[#B45309]";
+  }
+
+  function getBookingRequests(bookingId: string) {
+    return requests.filter((request) => request.booking_id === bookingId);
+  }
+
+  function hasPendingRequest(bookingId: string, type: "reschedule" | "cancel") {
+    return requests.some(
+      (request) =>
+        request.booking_id === bookingId &&
+        request.request_type === type &&
+        request.status === "pending"
+    );
   }
 
   const upcomingBookings = bookings.filter((booking) => {
@@ -222,7 +318,11 @@ export default function DashboardPage() {
 
           <div className="rounded-3xl border border-[#E8D8C8] bg-white/70 p-6 text-center shadow-lg">
             <p className="text-4xl font-bold text-[#7A4A8D]">
-              {bookings.filter((booking) => booking.payment_status === "paid").length}
+              {
+                bookings.filter(
+                  (booking) => booking.payment_status === "paid"
+                ).length
+              }
             </p>
             <p className="mt-2 font-semibold text-[#2D6A73]">
               Paid Bookings
@@ -271,10 +371,21 @@ export default function DashboardPage() {
               <BookingCard
                 key={booking.id}
                 booking={booking}
+                requests={getBookingRequests(booking.id)}
                 formatDate={formatDate}
                 formatCreatedAt={formatCreatedAt}
                 statusStyle={statusStyle}
                 paymentStyle={paymentStyle}
+                requestStyle={requestStyle}
+                hasPendingReschedule={hasPendingRequest(
+                  booking.id,
+                  "reschedule"
+                )}
+                hasPendingCancel={hasPendingRequest(booking.id, "cancel")}
+                onRequestReschedule={() =>
+                  openRequestModal(booking, "reschedule")
+                }
+                onRequestCancel={() => openRequestModal(booking, "cancel")}
               />
             ))}
           </div>
@@ -300,31 +411,116 @@ export default function DashboardPage() {
               <BookingCard
                 key={booking.id}
                 booking={booking}
+                requests={getBookingRequests(booking.id)}
                 formatDate={formatDate}
                 formatCreatedAt={formatCreatedAt}
                 statusStyle={statusStyle}
                 paymentStyle={paymentStyle}
+                requestStyle={requestStyle}
+                hasPendingReschedule={hasPendingRequest(
+                  booking.id,
+                  "reschedule"
+                )}
+                hasPendingCancel={hasPendingRequest(booking.id, "cancel")}
+                onRequestReschedule={() =>
+                  openRequestModal(booking, "reschedule")
+                }
+                onRequestCancel={() => openRequestModal(booking, "cancel")}
               />
             ))}
           </div>
         </section>
       </section>
+
+      {selectedBooking && requestType && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-6">
+          <form
+            onSubmit={submitBookingRequest}
+            className="w-full max-w-lg rounded-3xl border border-[#E8D8C8] bg-[#FBF8F3] p-8 shadow-2xl"
+          >
+            <h2 className="mb-2 text-3xl font-bold text-[#7A4A8D]">
+              {requestType === "reschedule"
+                ? "Request Reschedule"
+                : "Request Cancellation"}
+            </h2>
+
+            <p className="mb-5 text-[#4B4B4B]">
+              {selectedBooking.session_type || "Session"} ·{" "}
+              {formatDate(getBookingDate(selectedBooking))}
+            </p>
+
+            <label className="mb-5 block">
+              <span className="mb-2 block font-bold text-[#2D6A73]">
+                Message
+              </span>
+
+              <textarea
+                rows={5}
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                placeholder={
+                  requestType === "reschedule"
+                    ? "Tell us your preferred new date/time and why you need to reschedule."
+                    : "Tell us why you need to cancel this booking."
+                }
+                required
+                className="w-full rounded-xl border border-[#E8D8C8] bg-white/80 p-3 outline-none focus:border-[#7A4A8D]"
+              />
+            </label>
+
+            {requestStatus && (
+              <p className="mb-5 rounded-xl bg-white/70 p-3 text-center font-semibold text-[#7A4A8D]">
+                {requestStatus}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                className="rounded-xl bg-[#2D6A73] px-5 py-3 font-bold text-white transition hover:bg-[#245961] sm:flex-1"
+              >
+                Submit Request
+              </button>
+
+              <button
+                type="button"
+                onClick={closeRequestModal}
+                className="rounded-xl border border-[#D65A7A] px-5 py-3 font-bold text-[#D65A7A] transition hover:bg-[#D65A7A] hover:text-white sm:flex-1"
+              >
+                Close
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
 
 function BookingCard({
   booking,
+  requests,
   formatDate,
   formatCreatedAt,
   statusStyle,
   paymentStyle,
+  requestStyle,
+  hasPendingReschedule,
+  hasPendingCancel,
+  onRequestReschedule,
+  onRequestCancel,
 }: {
   booking: Booking;
+  requests: BookingRequest[];
   formatDate: (date: string | null | undefined) => string;
   formatCreatedAt: (date: string) => string;
   statusStyle: (status: string | null) => string;
   paymentStyle: (status: string | null) => string;
+  requestStyle: (status: string) => string;
+  hasPendingReschedule: boolean;
+  hasPendingCancel: boolean;
+  onRequestReschedule: () => void;
+  onRequestCancel: () => void;
 }) {
   const date = booking.session_date || booking.preferred_date;
 
@@ -384,13 +580,59 @@ function BookingCard({
         <p className="mt-1 break-all text-xs text-[#4B4B4B]">{booking.id}</p>
       </div>
 
+      {requests.length > 0 && (
+        <div className="mt-5 rounded-xl border border-[#E8D8C8] bg-[#FBF8F3] p-4">
+          <p className="mb-3 text-sm font-bold text-[#2D6A73]">
+            Request History
+          </p>
+
+          <div className="space-y-2">
+            {requests.map((request) => (
+              <div
+                key={request.id}
+                className="flex flex-col gap-1 rounded-xl bg-white/70 p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold capitalize text-[#7A4A8D]">
+                    {request.request_type}
+                  </p>
+
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-bold ${requestStyle(
+                      request.status
+                    )}`}
+                  >
+                    {request.status}
+                  </span>
+                </div>
+
+                {request.message && (
+                  <p className="text-sm text-[#4B4B4B]">{request.message}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-5 flex flex-wrap gap-3">
-        <Link
-          href="/contact"
-          className="rounded-xl border border-[#7A4A8D] px-4 py-2 text-sm font-bold text-[#7A4A8D] transition hover:bg-[#7A4A8D] hover:text-white"
+        <button
+          type="button"
+          onClick={onRequestReschedule}
+          disabled={hasPendingReschedule}
+          className="rounded-xl border border-[#7A4A8D] px-4 py-2 text-sm font-bold text-[#7A4A8D] transition hover:bg-[#7A4A8D] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Request Change
-        </Link>
+          {hasPendingReschedule ? "Reschedule Pending" : "Request Reschedule"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onRequestCancel}
+          disabled={hasPendingCancel}
+          className="rounded-xl border border-[#D65A7A] px-4 py-2 text-sm font-bold text-[#D65A7A] transition hover:bg-[#D65A7A] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {hasPendingCancel ? "Cancel Pending" : "Request Cancel"}
+        </button>
 
         <Link
           href="/resources"
