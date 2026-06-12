@@ -33,10 +33,10 @@ type BookingRequest = {
   customer_email: string;
   request_type: string;
   message: string | null;
+  admin_note: string | null;
   status: string;
   created_at: string;
 };
-
 type BookingSlot = {
   id: string;
   session_type: string;
@@ -68,6 +68,7 @@ export default function AdminPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [requests, setRequests] = useState<BookingRequest[]>([]);
+  const [requestNotes, setRequestNotes] = useState<Record<string, string>>({});
   const [slots, setSlots] = useState<BookingSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -155,7 +156,15 @@ export default function AdminPage() {
 
     if (messagesData) setMessages(messagesData);
     if (bookingsData) setBookings(bookingsData);
-    if (requestsData) setRequests(requestsData);
+    if (requestsData) {
+  setRequests(requestsData);
+
+  const notes: Record<string, string> = {};
+  requestsData.forEach((request) => {
+    notes[request.id] = request.admin_note || "";
+  });
+  setRequestNotes(notes);
+}
     if (slotsData) setSlots(slotsData);
 
     setLoading(false);
@@ -234,6 +243,22 @@ export default function AdminPage() {
 
     loadData();
   }
+  async function saveAdminNote(requestId: string) {
+  const note = requestNotes[requestId] || "";
+
+  const { error } = await supabase
+    .from("booking_requests")
+    .update({ admin_note: note })
+    .eq("id", requestId);
+
+  if (error) {
+    alert("Could not save admin note: " + error.message);
+    return;
+  }
+
+  alert("Admin note saved.");
+  loadData();
+}
 
   async function approveCancelRequest(request: BookingRequest) {
     const booking = getBookingForRequest(request.booking_id);
@@ -523,6 +548,7 @@ export default function AdminPage() {
       request.customer_email.toLowerCase().includes(search) ||
       request.request_type.toLowerCase().includes(search) ||
       (request.message || "").toLowerCase().includes(search) ||
+      (request.admin_note || "").toLowerCase().includes(search) ||
       (booking?.full_name || "").toLowerCase().includes(search) ||
       (booking?.session_type || "").toLowerCase().includes(search);
 
@@ -697,6 +723,31 @@ export default function AdminPage() {
                   )}
 
                   <p className="mb-3">{request.message || "No message added."}</p>
+                  <label className="mt-4 block">
+  <span className="mb-2 block text-sm font-bold text-[#2D6A73]">
+    Admin Note
+  </span>
+
+  <textarea
+    rows={3}
+    value={requestNotes[request.id] || ""}
+    onChange={(e) =>
+      setRequestNotes((prev) => ({
+        ...prev,
+        [request.id]: e.target.value,
+      }))
+    }
+    placeholder="Add internal admin note..."
+    className="w-full rounded-xl border border-[#E8DDD3] bg-white/80 p-3 text-sm outline-none focus:border-[#D65A7A]"
+  />
+</label>
+
+<button
+  onClick={() => saveAdminNote(request.id)}
+  className="mt-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#2D6A73]"
+>
+  Save Note
+</button>
 
                   <p className="text-xs text-gray-500">Request ID: {request.id}</p>
 
