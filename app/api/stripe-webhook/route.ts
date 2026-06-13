@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { createCalendarEvent } from "../../lib/googleCalendar";
+import { createCalendarEvent } from "@/app/lib/googleCalendar";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
