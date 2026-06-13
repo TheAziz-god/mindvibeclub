@@ -128,7 +128,10 @@ ${booking.message || "No message added."}
           .eq("id", bookingId);
       }
     } catch (calendarError) {
-      console.error("Google Calendar event error:", calendarError);
+      console.error(
+  "Google Calendar event error:",
+  JSON.stringify(calendarError, null, 2)
+);
     }
 
     try {
