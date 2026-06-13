@@ -21,8 +21,8 @@ export async function createCalendarEvent({
   startDateTime: string;
   endDateTime: string;
 }) {
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
+const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
 
   if (!calendarId) throw new Error("Missing GOOGLE_CALENDAR_ID");
   if (!clientEmail) throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_EMAIL");
