@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     `;
 
     await resend.emails.send({
-      from: "MindVibeClub <onboarding@resend.dev>",
+      from: "MindVibeClub <bookings@mindvibeclub.com>",
       to: booking.email,
       subject: "Your MindVibeClub Booking Is Confirmed",
       html: `
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
     });
 
     await resend.emails.send({
-      from: "MindVibeClub <onboarding@resend.dev>",
+      from: "MindVibeClub <bookings@mindvibeclub.com>",
       to: ADMIN_EMAIL,
       subject: `New Paid Booking: ${booking.session_type}`,
       html: `
