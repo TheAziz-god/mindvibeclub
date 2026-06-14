@@ -9,7 +9,10 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const ADMIN_EMAIL = "azizkhan69512@gmail.com";
+const ADMIN_EMAILS = [
+  "mindvibeclub25@gmail.uk.com",
+  "azizkhan69512@gmail.com",
+];
 
 function formatDate(dateValue: string) {
   return new Date(dateValue).toLocaleDateString("en-GB", {
@@ -111,7 +114,7 @@ export async function POST(request: Request) {
 
     await resend.emails.send({
       from: "MindVibeClub <bookings@mindvibeclub.com>",
-      to: ADMIN_EMAIL,
+      to: ADMIN_EMAILS,
       subject: `New Paid Booking: ${booking.session_type}`,
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #FAF7F2; padding: 24px;">

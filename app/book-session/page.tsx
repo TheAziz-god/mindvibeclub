@@ -57,13 +57,16 @@ export default function BookSessionPage() {
     setSlots([]);
     setStatus("Loading available slots...");
 
-    let query = supabase
-      .from("booking_slots")
-      .select("*")
-      .eq("session_type", type)
-      .eq("is_booked", false)
-      .order("slot_date", { ascending: true })
-      .order("start_time", { ascending: true });
+   const today = new Date().toISOString().split("T")[0];
+
+let query = supabase
+  .from("booking_slots")
+  .select("*")
+  .eq("session_type", type)
+  .eq("is_booked", false)
+  .gte("slot_date", today)
+  .order("slot_date", { ascending: true })
+  .order("start_time", { ascending: true });
 
     if (date) {
       query = query.eq("slot_date", date);

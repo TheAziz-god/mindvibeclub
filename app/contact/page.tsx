@@ -89,15 +89,50 @@ export default function ContactPage() {
             </h2>
 
             <div className="space-y-5 leading-8 text-[#4B4B4B]">
-              <p>
-                <strong className="text-[#7A4A8D]">Email:</strong>{" "}
-                hello@mindvibeclub.co.uk
-              </p>
+              <div className="rounded-2xl bg-white/70 p-5">
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.22em] text-[#2D8B87]">
+                  Email
+                </p>
+                <a
+                  href="mailto:mindvibeclub25@gmail.uk.com"
+                  className="font-bold text-[#7A4A8D] underline-offset-4 hover:underline"
+                >
+                  mindvibeclub25@gmail.uk.com
+                </a>
+              </div>
 
-              <p>
-                <strong className="text-[#7A4A8D]">Location:</strong>{" "}
-                Leicester, United Kingdom
-              </p>
+              <div className="rounded-2xl bg-white/70 p-5">
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.22em] text-[#2D8B87]">
+                  Location
+                </p>
+                <p className="font-semibold">
+                  Online Services • London, UK
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <a
+                  href="tel:+447904496210"
+                  className="rounded-2xl border-2 border-[#2D6A73] bg-[#2D6A73] p-5 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/80">
+                    Call
+                  </p>
+                  <p className="mt-2 text-xl font-bold">+44 7904496210</p>
+                </a>
+
+                <a
+                  href="tel:+447482492353"
+                  className="rounded-2xl border border-[#E8D8C8] bg-white/80 p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#7A4A8D] hover:shadow-lg"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#7A4A8D]">
+                    Alternative
+                  </p>
+                  <p className="mt-2 text-xl font-bold text-[#2D6A73]">
+                    +44 7482 492353
+                  </p>
+                </a>
+              </div>
 
               <p>
                 <strong className="text-[#7A4A8D]">Who Can Contact Us?</strong>{" "}
@@ -111,8 +146,9 @@ export default function ContactPage() {
                 </h3>
 
                 <p>
-                  MindVibeClub is not an emergency service. If someone is in
-                  immediate danger, call 999 or go to A&E.
+                  MindVibeClub provides wellbeing and support services. We are
+                  not an emergency service. If someone is in immediate danger,
+                  call 999 or go to A&E.
                 </p>
               </div>
 
@@ -122,8 +158,8 @@ export default function ContactPage() {
                 </h3>
 
                 <p>
-                  We aim to respond as soon as possible during normal working
-                  hours.
+                  We aim to respond within 12 hours. For urgent booking
+                  enquiries, please contact us using the phone numbers above.
                 </p>
               </div>
             </div>
