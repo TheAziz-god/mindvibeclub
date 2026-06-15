@@ -25,6 +25,7 @@ type Booking = {
   session_price?: number | null;
   slot_id?: string | null;
   created_at: string;
+  calendar_event_id?: string | null;
 };
 
 type BookingRequest = {
@@ -275,7 +276,7 @@ async function approveCancelRequest(request: BookingRequest) {
   const booking = getBookingForRequest(request.booking_id);
 
   const confirmApprove = confirm(
-    "Approve this cancellation request? This will mark the booking as cancelled and free the slot."
+    "Approve this cancellation request? This will mark the booking as cancelled, free the slot, and remove the calendar event."
   );
 
   if (!confirmApprove) return;
@@ -291,6 +292,23 @@ async function approveCancelRequest(request: BookingRequest) {
         .from("booking_slots")
         .update({ is_booked: false })
         .eq("id", booking.slot_id);
+    }
+
+    if (booking.calendar_event_id) {
+      await fetch("/api/delete-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId: booking.calendar_event_id,
+        }),
+      });
+
+      await supabase
+        .from("bookings")
+        .update({ calendar_event_id: null })
+        .eq("id", booking.id);
     }
   }
 

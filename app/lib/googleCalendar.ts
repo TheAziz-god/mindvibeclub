@@ -10,6 +10,30 @@ function getGooglePrivateKey() {
   return key.replace(/\\n/g, "\n").replace(/^"|"$/g, "");
 }
 
+function getCalendarAuth() {
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+
+  if (!clientEmail) {
+    throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_EMAIL");
+  }
+
+  return new google.auth.JWT({
+    email: clientEmail,
+    key: getGooglePrivateKey(),
+    scopes: ["https://www.googleapis.com/auth/calendar"],
+  });
+}
+
+function getCalendarId() {
+  const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
+
+  if (!calendarId) {
+    throw new Error("Missing GOOGLE_CALENDAR_ID");
+  }
+
+  return calendarId;
+}
+
 export async function createCalendarEvent({
   summary,
   description,
@@ -21,22 +45,13 @@ export async function createCalendarEvent({
   startDateTime: string;
   endDateTime: string;
 }) {
-const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
-const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
-
-  if (!calendarId) throw new Error("Missing GOOGLE_CALENDAR_ID");
-  if (!clientEmail) throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_EMAIL");
-
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: getGooglePrivateKey(),
-    scopes: ["https://www.googleapis.com/auth/calendar"],
+  const calendar = google.calendar({
+    version: "v3",
+    auth: getCalendarAuth(),
   });
 
-  const calendar = google.calendar({ version: "v3", auth });
-
   const event = await calendar.events.insert({
-    calendarId,
+    calendarId: getCalendarId(),
     requestBody: {
       summary,
       description,
@@ -52,4 +67,18 @@ const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
   });
 
   return event.data;
+}
+
+export async function deleteCalendarEvent(eventId: string) {
+  const calendar = google.calendar({
+    version: "v3",
+    auth: getCalendarAuth(),
+  });
+
+  await calendar.events.delete({
+    calendarId: getCalendarId(),
+    eventId,
+  });
+
+  return true;
 }
