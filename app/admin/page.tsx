@@ -114,12 +114,25 @@ export default function AdminPage() {
 
     const user = userData.user;
 
-    if (!user || user.email !== "azizkhan69512@gmail.com") {
-      await supabase.auth.signOut();
-      setLoading(false);
-      router.push("/login");
-      return;
-    }
+    if (!user?.email) {
+  await supabase.auth.signOut();
+  setLoading(false);
+  router.push("/login");
+  return;
+}
+
+const { data: adminUser, error: adminError } = await supabase
+  .from("admin_users")
+  .select("email")
+  .eq("email", user.email)
+  .single();
+
+if (adminError || !adminUser) {
+  await supabase.auth.signOut();
+  setLoading(false);
+  router.push("/login");
+  return;
+}
 
     const { data: messagesData } = await supabase
       .from("contact_messages")
