@@ -230,19 +230,30 @@ export default function AdminPage() {
     return "bg-yellow-100 text-yellow-700";
   }
 
-  async function updateRequestStatus(id: string, status: string) {
-    const { error } = await supabase
-      .from("booking_requests")
-      .update({ status })
-      .eq("id", id);
+ async function updateRequestStatus(id: string, status: string) {
+  const { error } = await supabase
+    .from("booking_requests")
+    .update({ status })
+    .eq("id", id);
 
-    if (error) {
-      alert("Could not update request: " + error.message);
-      return;
-    }
-
-    loadData();
+  if (error) {
+    alert("Could not update request: " + error.message);
+    return;
   }
+
+  await fetch("/api/send-request-decision-email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requestId: id,
+      decision: status,
+    }),
+  });
+
+  loadData();
+}
   async function saveAdminNote(requestId: string) {
   const note = requestNotes[requestId] || "";
 
@@ -260,36 +271,52 @@ export default function AdminPage() {
   loadData();
 }
 
-  async function approveCancelRequest(request: BookingRequest) {
-    const booking = getBookingForRequest(request.booking_id);
+async function approveCancelRequest(request: BookingRequest) {
+  const booking = getBookingForRequest(request.booking_id);
 
-    const confirmApprove = confirm(
-      "Approve this cancellation request? This will mark the booking as cancelled and free the slot."
-    );
+  const confirmApprove = confirm(
+    "Approve this cancellation request? This will mark the booking as cancelled and free the slot."
+  );
 
-    if (!confirmApprove) return;
+  if (!confirmApprove) return;
 
-    if (booking) {
-      await supabase
-        .from("bookings")
-        .update({ status: "cancelled" })
-        .eq("id", booking.id);
-
-      if (booking.slot_id) {
-        await supabase
-          .from("booking_slots")
-          .update({ is_booked: false })
-          .eq("id", booking.slot_id);
-      }
-    }
-
+  if (booking) {
     await supabase
-      .from("booking_requests")
-      .update({ status: "approved" })
-      .eq("id", request.id);
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("id", booking.id);
 
-    loadData();
+    if (booking.slot_id) {
+      await supabase
+        .from("booking_slots")
+        .update({ is_booked: false })
+        .eq("id", booking.slot_id);
+    }
   }
+
+  const { error } = await supabase
+    .from("booking_requests")
+    .update({ status: "approved" })
+    .eq("id", request.id);
+
+  if (error) {
+    alert("Could not approve request: " + error.message);
+    return;
+  }
+
+  await fetch("/api/send-request-decision-email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requestId: request.id,
+      decision: "approved",
+    }),
+  });
+
+  loadData();
+}
 
   async function generateSlots() {
     if (!slotStartDate || !slotEndDate) {
