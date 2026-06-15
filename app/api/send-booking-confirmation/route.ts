@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 );
 
 const ADMIN_EMAILS = [
-  "mindvibeclub25@gmail.uk.com",
+  "mindvibeclub25@gmail.com.uk",
   "azizkhan69512@gmail.com",
 ];
 
@@ -56,7 +56,7 @@ function emailLayout(content: string) {
         <div style="margin-top:18px; background:#ffffff; border:1px solid #E8D8C8; border-radius:18px; padding:18px; text-align:center;">
           <h3 style="margin:0 0 8px; color:#2D6A73; font-size:18px;">Need help?</h3>
           <p style="margin:0; color:#4B4B4B; line-height:1.7;">
-            Email us at <a href="mailto:mindvibeclub25@gmail.uk.com" style="color:#7A4A8D; font-weight:700;">mindvibeclub25@gmail.uk.com</a><br />
+            Email us at <a href="mailto:mindvibeclub25@gmail.com.uk" style="color:#7A4A8D; font-weight:700;">mindvibeclub25@gmail.com.uk</a><br />
             Call <a href="tel:+447494677720" style="color:#2D6A73; font-weight:700;">+44 7494 677720</a>
             or <a href="tel:+447482492353" style="color:#2D6A73; font-weight:700;">+44 7482 492353</a>
           </p>

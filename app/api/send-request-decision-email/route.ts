@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 );
 
 const ADMIN_EMAILS = [
-  "mindvibeclub25@gmail.uk.com",
+  "mindvibeclub25@gmail.com.uk",
   "azizkhan69512@gmail.com",
 ];
 
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
           <p style="margin-top:24px;">
             Need help?<br/>
-            Email: mindvibeclub25@gmail.uk.com<br/>
+            Email: mindvibeclub25@gmail.com.uk<br/>
             Call: +44 7494 677720 or +44 7482 492353
           </p>
 
