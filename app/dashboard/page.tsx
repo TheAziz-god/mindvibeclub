@@ -143,6 +143,16 @@ export default function DashboardPage() {
     }
 
     setRequests((prev) => [data, ...prev]);
+    await fetch("/api/send-booking-request-email", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    requestId: data.id,
+  }),
+});
+
     setRequestStatus("Request submitted successfully.");
 
     setTimeout(() => {
