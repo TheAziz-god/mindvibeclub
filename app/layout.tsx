@@ -5,6 +5,7 @@ import "./globals.css";
 import AnimatedBackground from "./components/AnimatedBackground";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import GoogleAnalytics from "./components/GoogleAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <main className="flex-grow">{children}</main>
 
         <Footer />
+        <GoogleAnalytics />
       </body>
     </html>
   );
