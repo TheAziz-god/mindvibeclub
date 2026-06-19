@@ -5,8 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const ADMIN_EMAIL = "azizkhan69512@gmail.com";
-const REDIRECT_URL = "https://mindvibeclub.vercel.app";
+const REDIRECT_URL = "https://www.mindvibeclub.com";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +14,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
+
+  async function checkIsAdmin(userEmail: string) {
+    const { data } = await supabase
+      .from("admin_users")
+      .select("email")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    return !!data;
+  }
 
   async function handleGoogleLogin() {
     setStatus("Connecting to Google...");
@@ -50,33 +59,37 @@ export default function LoginPage() {
       return;
     }
 
-    if (data.user?.email === ADMIN_EMAIL) {
+    const userEmail = data.user?.email;
+
+    if (!userEmail) {
+      setStatus("Could not verify your account. Please try again.");
+      return;
+    }
+
+    const isAdmin = await checkIsAdmin(userEmail);
+
+    if (isAdmin) {
       router.push("/admin");
       return;
     }
 
-    const { data: adminUser } = await supabase
-  .from("admin_users")
-  .select("email")
-  .eq("email", email)
-  .single();
-
-if (adminUser) {
-  router.push("/admin");
-} else {
-  router.push("/dashboard");
-}
+    router.push("/dashboard");
   }
 
   async function handleCreateAccount(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("Creating account...");
 
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback`
+        : `${REDIRECT_URL}/auth/callback`;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: REDIRECT_URL,
+        emailRedirectTo: redirectTo,
       },
     });
 
