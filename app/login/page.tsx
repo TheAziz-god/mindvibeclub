@@ -55,7 +55,17 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    const { data: adminUser } = await supabase
+  .from("admin_users")
+  .select("email")
+  .eq("email", email)
+  .single();
+
+if (adminUser) {
+  router.push("/admin");
+} else {
+  router.push("/dashboard");
+}
   }
 
   async function handleCreateAccount(e: React.FormEvent<HTMLFormElement>) {
